@@ -1,0 +1,58 @@
+/* Styles pour le composant LandingPage */
+
+.landingPage {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.landingPage.loaded {
+  opacity: 1;
+}
+
+.landingPage.loading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.heroBackground {
+  position: relative;
+  background-image: url('/images/school-background.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+  z-index: 1;
+}
+
+.features {
+  padding: 4rem 2rem;
+  background-color: #ffffff;
+}
+
+.pricing {
+  padding: 4rem 2rem;
+  background-color: #f8f9fa;
+}
+
+.cta {
+  padding: 4rem 2rem;
+  text-align: center;
+  background-color: #ffffff;
+}

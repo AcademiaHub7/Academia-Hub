@@ -1,0 +1,222 @@
+.loadingContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle, #1b74b6, #0f4e81, #06264c);
+  color: white;
+  z-index: 1000;
+  font-family: 'Poppins', sans-serif;
+  overflow: hidden;
+}
+
+.logo {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-align: center;
+  animation: fadeIn 1s ease-in-out;
+}
+
+.loadingBar {
+  width: 200px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  margin-top: 2rem;
+  overflow: hidden;
+}
+
+.progress {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.particle {
+  position: absolute;
+  opacity: 0.9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+  will-change: transform, opacity;
+  z-index: 1;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  animation: float 6s infinite ease-in-out;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Effet de flottement alternatif pour certaines particules */
+.particle:nth-child(odd) {
+  animation-name: float, floatHorizontal;
+  animation-duration: 8s, 12s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+/* Effet de pulsation pour d'autres particules */
+.particle:nth-child(3n) {
+  animation: pulse 4s infinite ease-in-out;
+}
+
+/* Rotation pour les icônes */
+.particle i {
+  display: inline-block;
+  animation: spin 8s infinite linear;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Styles pour les positions dynamiques */
+.particle[class*='left-'] {
+  left: var(--left, 0);
+}
+
+.particle[class*='bottom-'] {
+  bottom: var(--bottom, 0);
+}
+
+/* Styles pour les tailles dynamiques */
+.particle[class*='size-'] {
+  width: var(--size, 20px);
+  height: var(--size, 20px);
+}
+
+/* Styles pour les délais et durées d'animation */
+.particle[class*='delay-'] {
+  animation-delay: var(--delay, 0s);
+}
+
+.particle[class*='duration-'] {
+  animation-duration: var(--duration, 4s);
+}
+
+.particle::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.loadingText {
+  margin-top: 1rem;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.particle-float {
+  animation-name: float;
+}
+
+.particleIcon {
+  display: inline-block;
+  font-size: inherit;
+  line-height: 1;
+}
+
+.particle {
+  position: absolute;
+  z-index: 1;
+  opacity: 0.8;
+  will-change: transform, opacity;
+  pointer-events: none;
+  -webkit-user-select: none; /* Pour Safari */
+  user-select: none;
+  transform-origin: center;
+  transition: opacity 0.3s ease;
+}
+
+.particle-float {
+  animation-name: float;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) rotate(5deg) scale(1.05);
+  }
+}
+
+/* Animation de flottement vertical */
+@keyframes floatVertical {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+/* Animation de flottement horizontal */
+@keyframes floatHorizontal {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+
+/* Animation de pulsation */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+
+/* Animation de rotation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Classes d'animation aléatoires */
+.particle-float-1 { animation-name: floatVertical; }
+.particle-float-2 { animation-name: floatHorizontal; }
+.particle-float-3 { animation-name: pulse; }
+.particle-float-4 { animation-name: spin; animation-duration: 15s; }
+
+@keyframes float {
+  0% { 
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 0.7;
+  }
+  50% { 
+    transform: translateY(-30px) rotate(5deg) scale(1.1);
+    opacity: 1;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.7));
+  }
+  100% { 
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 0.7;
+  }
+}
+
+@keyframes floatHorizontal {
+  0% { transform: translateX(0) rotate(0deg); }
+  50% { transform: translateX(20px) rotate(5deg); }
+  100% { transform: translateX(0) rotate(0deg); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
