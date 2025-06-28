@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, Check, ArrowLeft, CreditCard, Shield, Star, Phone, Globe } from 'lucide-react';
-import PaymentModal from './modals/PaymentModal';
+import { GraduationCap, Check, ArrowLeft, CreditCard, Shield, Star, Phone } from 'lucide-react';
 
 const Subscription: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState('professional');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'fedapay' | 'kkiapay'>('fedapay');
   const navigate = useNavigate();
 
   const plans = [
@@ -73,24 +70,14 @@ const Subscription: React.FC = () => {
 
   const handlePayment = async () => {
     setIsProcessing(true);
-    
     try {
-      // Ouvrir la modal de paiement
-      setIsPaymentModalOpen(true);
+      // Redirection vers une page de confirmation ou de paiement externe
+      navigate('/dashboard');
     } catch (error) {
       console.error('Payment initialization failed:', error);
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const handlePaymentSuccess = () => {
-    // Redirection vers le dashboard après un paiement réussi
-    navigate('/dashboard');
-  };
-
-  const handlePaymentCancel = () => {
-    setIsPaymentModalOpen(false);
   };
 
   return (
@@ -227,31 +214,14 @@ const Subscription: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <button
-                  onClick={() => {
-                    setPaymentMethod('fedapay');
-                    handlePayment();
-                  }}
-                  disabled={isProcessing}
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-4 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
-                >
-                  <Globe className="w-5 h-5 mr-2" />
-                  Payer avec FedaPay
-                </button>
-                
-                <button
-                  onClick={() => {
-                    setPaymentMethod('kkiapay');
-                    handlePayment();
-                  }}
-                  disabled={isProcessing}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
-                >
-                  <Phone className="w-5 h-5 mr-2" />
-                  Payer avec KKiaPay
-                </button>
-              </div>
+              <button
+                onClick={handlePayment}
+                disabled={isProcessing}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
+              >
+                <CreditCard className="w-5 h-5 mr-2" />
+                {isProcessing ? 'Traitement...' : 'Procéder au paiement'}
+              </button>
 
               <p className="text-xs text-gray-500 dark:text-gray-500 mt-4 text-center">
                 En procédant au paiement, vous acceptez nos conditions d'utilisation. 
@@ -272,15 +242,7 @@ const Subscription: React.FC = () => {
         </div>
       </div>
 
-      {/* Payment Modal */}
-      <PaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={handlePaymentCancel}
-        onSuccess={handlePaymentSuccess}
-        amount={Math.round((selectedPlanData?.price || 0) * 1.2)}
-        planName={selectedPlanData?.name || ''}
-        paymentMethod={paymentMethod}
-      />
+      
     </div>
   );
 };

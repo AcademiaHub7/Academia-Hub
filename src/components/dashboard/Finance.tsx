@@ -3,8 +3,6 @@ import {
   DollarSign, 
   CreditCard, 
   TrendingUp, 
-  Users,
-  Calendar,
   Download,
   Plus,
   Search,
@@ -16,12 +14,10 @@ import {
   FileText,
   Calculator,
   Wallet,
-  Building,
   UserCheck,
   BarChart3
 } from 'lucide-react';
 import { 
-  PaymentModal, 
   InvoiceModal, 
   ExpenseModal, 
   FeeTypeModal, 
@@ -31,11 +27,12 @@ import {
   AlertModal
 } from '../modals';
 
+import './Finance.css';
+
 const Finance: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   
   // Modals state
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isFeeTypeModalOpen, setIsFeeTypeModalOpen] = useState(false);
@@ -46,7 +43,7 @@ const Finance: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState({ title: '', message: '', type: 'success' as 'success' | 'error' | 'info' | 'warning' });
 
   // Selected item for edit/delete
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<Record<string, unknown> | null>(null);
   const [actionType, setActionType] = useState<'delete' | 'edit' | ''>('');
 
   const financialStats = [
@@ -277,14 +274,11 @@ const Finance: React.FC = () => {
     setIsBudgetModalOpen(true);
   };
 
-  const handleEditItem = (item: any, type: string) => {
+  const handleEditItem = (item: Record<string, unknown>, type: 'payment' | 'invoice' | 'expense' | 'feeType' | 'closingDay' | 'budget') => {
     setSelectedItem(item);
     setActionType('edit');
     
     switch (type) {
-      case 'payment':
-        setIsPaymentModalOpen(true);
-        break;
       case 'invoice':
         setIsInvoiceModalOpen(true);
         break;
@@ -294,94 +288,99 @@ const Finance: React.FC = () => {
       case 'feeType':
         setIsFeeTypeModalOpen(true);
         break;
+      case 'closingDay':
+        setIsClosingDayModalOpen(true);
+        break;
       case 'budget':
         setIsBudgetModalOpen(true);
         break;
       default:
+        // Handle payment case or other types
+        if (type === 'payment') {
+          alert('Fonctionnalité de paiement en cours de développement');
+        }
         break;
     }
   };
 
-  const handleDeleteItem = (item: any, type: string) => {
+  const handleDeleteItem = (item: Record<string, unknown>, type: 'payment' | 'invoice' | 'expense' | 'feeType' | 'closingDay' | 'budget') => {
     setSelectedItem(item);
     setActionType('delete');
     
     // Set confirmation message based on type
-    let confirmMessage = '';
+    let message = '';
+    const itemId = item.id ? String(item.id) : '';
+    
     switch (type) {
       case 'payment':
-        confirmMessage = `Êtes-vous sûr de vouloir supprimer le paiement ${item.id} ?`;
+        message = `Êtes-vous sûr de vouloir supprimer le paiement ${itemId} ?`;
         break;
       case 'invoice':
-        confirmMessage = `Êtes-vous sûr de vouloir supprimer la facture ${item.id} ?`;
+        message = `Êtes-vous sûr de vouloir supprimer la facture ${itemId} ?`;
         break;
       case 'expense':
-        confirmMessage = `Êtes-vous sûr de vouloir supprimer la dépense ${item.id} ?`;
+        message = `Êtes-vous sûr de vouloir supprimer la dépense ${itemId} ?`;
         break;
       default:
-        confirmMessage = 'Êtes-vous sûr de vouloir supprimer cet élément ?';
-        break;
+        message = 'Êtes-vous sûr de vouloir supprimer cet élément ?';
     }
+    
+    setConfirmMessage({
+      title: 'Confirmer la suppression',
+      message: message,
+      type: 'delete' as const
+    });
     
     setIsConfirmModalOpen(true);
   };
 
-  const handleSavePayment = (paymentData: any) => {
-    console.log('Saving payment:', paymentData);
-    setAlertMessage({
-      title: 'Paiement enregistré',
-      message: 'Le paiement a été enregistré avec succès.',
-      type: 'success'
-    });
-    setIsAlertModalOpen(true);
-  };
 
-  const handleSaveInvoice = (invoiceData: any) => {
+  const handleSaveInvoice = (invoiceData: Record<string, unknown>) => {
     console.log('Saving invoice:', invoiceData);
     setAlertMessage({
       title: 'Facture enregistrée',
       message: 'La facture a été enregistrée avec succès.',
-      type: 'success'
+      type: 'success' as const
     });
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveExpense = (expenseData: any) => {
+  const handleSaveExpense = (expenseData: Record<string, unknown>) => {
     console.log('Saving expense:', expenseData);
     setAlertMessage({
       title: 'Dépense enregistrée',
       message: 'La dépense a été enregistrée avec succès.',
-      type: 'success'
+      type: 'success' as const
     });
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveFeeType = (feeTypeData: any) => {
+  const handleSaveFeeType = (feeTypeData: Record<string, unknown>) => {
     console.log('Saving fee type:', feeTypeData);
     setAlertMessage({
       title: 'Type de frais enregistré',
       message: 'Le type de frais a été enregistré avec succès.',
-      type: 'success'
+      type: 'success' as const
     });
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveClosingDay = (closingData: any) => {
+  const handleSaveClosingDay = (closingData: Record<string, unknown>) => {
     console.log('Saving closing day:', closingData);
     setAlertMessage({
       title: 'Journée clôturée',
       message: 'La journée a été clôturée avec succès.',
-      type: 'success'
+      type: 'success' as const
     });
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveBudget = (budgetData: any) => {
+  const handleSaveBudget = (budgetData: Record<string, unknown>) => {
     console.log('Saving budget:', budgetData);
     setAlertMessage({
       title: 'Budget enregistré',
       message: 'Le budget a été enregistré avec succès.',
-      type: 'success'
+      type: 'success' as const
     });
     setIsAlertModalOpen(true);
   };
@@ -1048,8 +1047,8 @@ const Finance: React.FC = () => {
                         <span className="text-sm text-gray-600">Taux de recouvrement</span>
                         <span className="text-sm font-medium">94.2%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '94.2%' }}></div>
+                      <div className="progress-bar">
+                        <div className="progress-bar-fill green"></div>
                       </div>
                     </div>
                     <div>
@@ -1057,8 +1056,8 @@ const Finance: React.FC = () => {
                         <span className="text-sm text-gray-600">Exécution budgétaire</span>
                         <span className="text-sm font-medium">78.5%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: '78.5%' }}></div>
+                      <div className="progress-bar">
+                        <div className="progress-bar-fill blue"></div>
                       </div>
                     </div>
                     <div>
@@ -1066,8 +1065,8 @@ const Finance: React.FC = () => {
                         <span className="text-sm text-gray-600">Marge opérationnelle</span>
                         <span className="text-sm font-medium">15.8%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-purple-600 h-2 rounded-full" style={{ width: '15.8%' }}></div>
+                      <div className="progress-bar">
+                        <div className="progress-bar-fill orange-small"></div>
                       </div>
                     </div>
                   </div>
@@ -1079,15 +1078,6 @@ const Finance: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <PaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        onSave={handleSavePayment}
-        paymentData={actionType === 'edit' ? selectedItem : undefined}
-        isEdit={actionType === 'edit'}
-        students={students}
-      />
-
       <InvoiceModal
         isOpen={isInvoiceModalOpen}
         onClose={() => setIsInvoiceModalOpen(false)}

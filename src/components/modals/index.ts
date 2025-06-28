@@ -11,7 +11,6 @@ export { default as VehicleModal } from './VehicleModal';
 export { default as GradeModal } from './GradeModal';
 export { default as ReportCardModal } from './ReportCardModal';
 export { default as EvaluationSettingsModal } from './EvaluationSettingsModal';
-export { default as PaymentModal } from './PaymentModal';
 export { default as InvoiceModal } from './InvoiceModal';
 export { default as ExpenseModal } from './ExpenseModal';
 export { default as FeeTypeModal } from './FeeTypeModal';

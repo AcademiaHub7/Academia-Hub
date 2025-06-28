@@ -10,8 +10,6 @@ import {
   Settings,
   GraduationCap,
   BarChart3,
-  Calendar,
-  FileText,
   Library,
   FlaskConical,
   Bus,
@@ -33,16 +31,18 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
-  const { theme } = useTheme();
+  // Thème est utilisé par le contexte ThemeProvider
+  useTheme();
 
   const menuItems = [
     { icon: Home, label: 'Tableau de bord', path: '/dashboard' },
     { icon: Calculator, label: 'Économat & Finance', path: '/dashboard/finance' },
-    { icon: DollarSign, label: 'Gestion de la Paie', path: '/dashboard/payroll' },
     { icon: Users, label: 'Scolarité & Élèves', path: '/dashboard/students' },
     { icon: Building, label: 'Études & Planification', path: '/dashboard/planning' },
+    { icon: Video, label: 'EduCast IA', path: '/dashboard/educast' },
     { icon: BookOpen, label: 'Examens & Évaluation', path: '/dashboard/examinations' },
     { icon: BarChart3, label: 'Statistiques & Analytics', path: '/dashboard/analytics' },
+    { icon: ShoppingBag, label: 'Boutique', path: '/dashboard/boutique' },
     { icon: MessageSquare, label: 'Communication', path: '/dashboard/communication' },
     { icon: Library, label: 'Bibliothèque', path: '/dashboard/library' },
     { icon: FlaskConical, label: 'Laboratoire', path: '/dashboard/laboratory' },
@@ -50,9 +50,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { icon: UtensilsCrossed, label: 'Cantine', path: '/dashboard/cafeteria' },
     { icon: Heart, label: 'Infirmerie', path: '/dashboard/health' },
     { icon: UserCheck, label: 'Personnel & RH', path: '/dashboard/hr' },
+    { icon: DollarSign, label: 'Gestion de la Paie', path: '/dashboard/payroll' },
     { icon: Shield, label: 'QHSE', path: '/dashboard/qhse' },
-    { icon: Video, label: 'EduCast IA', path: '/dashboard/educast' },
-    { icon: ShoppingBag, label: 'Boutique', path: '/dashboard/boutique' },
     { icon: Settings, label: 'Paramètres', path: '/dashboard/settings' }
   ];
 
@@ -95,8 +94,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <button 
               onClick={onClose}
               className="lg:hidden p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Fermer le menu latéral"
+              title="Fermer le menu"
             >
-              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" aria-hidden="true" />
             </button>
           </div>
 
