@@ -1,0 +1,92 @@
+/* Shared styles for dashboard components */
+
+/* Laboratory component styles */
+.laboratory-full-height {
+  height: calc(100vh - 16rem);
+}
+
+.laboratory-search-bar {
+  max-width: 36rem;
+}
+
+/* Planning component styles */
+.planning-calendar-container {
+  min-height: 600px;
+}
+
+.planning-date-header {
+  min-width: 200px;
+}
+
+/* Transport component styles */
+.transport-map-container {
+  height: 400px;
+  width: 100%;
+  border-radius: 0.5rem;
+}
+
+.transport-route-details {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Progress bar styles */
+.progress-bar-container {
+  width: 100%;
+  background-color: rgb(229, 231, 235);
+  border-radius: 9999px;
+  height: 0.5rem;
+}
+
+.progress-bar-fill {
+  height: 0.5rem;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.progress-bar-fill-blue {
+  background-color: rgb(37, 99, 235);
+}
+
+/* Width utility classes for progress bars */
+.w-10 { width: 10%; }
+.w-20 { width: 20%; }
+.w-30 { width: 30%; }
+.w-40 { width: 40%; }
+.w-50 { width: 50%; }
+.w-60 { width: 60%; }
+.w-70 { width: 70%; }
+.w-80 { width: 80%; }
+.w-90 { width: 90%; }
+.w-100 { width: 100%; }
+
+/* Progress bar color variants */
+.progress-bar-fill-score-high {
+  background-color: rgb(22 163 74);
+}
+
+.progress-bar-fill-score-medium {
+  background-color: rgb(234 179 8);
+}
+
+.progress-bar-fill-score-low {
+  background-color: rgb(220 38 38);
+}
+
+.progress-bar-fill-purple {
+  background-color: rgb(126, 34, 206);
+}
+
+/* Width utility classes for progress bars */
+.w-10 { width: 10%; }
+.w-20 { width: 20%; }
+.w-25 { width: 25%; }
+.w-30 { width: 30%; }
+.w-40 { width: 40%; }
+.w-50 { width: 50%; }
+.w-60 { width: 60%; }
+.w-70 { width: 70%; }
+.w-75 { width: 75%; }
+.w-80 { width: 80%; }
+.w-90 { width: 90%; }
+.w-100 { width: 100%; }

@@ -1,0 +1,38 @@
+.progressBarContainer {
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: #e5e7eb; /* bg-gray-200 */
+  overflow: hidden;
+  width: 100%;
+}
+
+.progressBarFill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+/* Color variants */
+.progressBarBlue {
+  background-color: #2563eb; /* bg-blue-600 */
+}
+
+.progressBarGreen {
+  background-color: #16a34a; /* bg-green-600 */
+}
+
+.progressBarRed {
+  background-color: #dc2626; /* bg-red-600 */
+}
+
+.progressBarPurple {
+  background-color: #7c3aed; /* bg-purple-600 */
+}
+
+.progressBarAmber {
+  background-color: #d97706; /* bg-amber-600 */
+}
+
+.progressBarCyan {
+  background-color: #0891b2; /* bg-cyan-600 */
+}

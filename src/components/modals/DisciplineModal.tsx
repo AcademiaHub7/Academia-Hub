@@ -2,13 +2,46 @@ import React, { useState } from 'react';
 import FormModal from './FormModal';
 import { Save, AlertTriangle, Calendar, User, MessageSquare } from 'lucide-react';
 
+interface Student {
+  id: string;
+  name: string;
+  class: string;
+}
+
+interface Attachment {
+  name: string;
+  type: string;
+  size: number;
+  uploadDate: string;
+  file: File;
+  url: string;
+}
+
+interface IncidentData {
+  id?: string;
+  studentId: string;
+  studentName: string;
+  studentClass: string;
+  incidentDate: string;
+  type: string;
+  description: string;
+  severity: string;
+  location: string;
+  witnesses: string;
+  actionTaken: string;
+  parentNotified: boolean;
+  followUp: string;
+  reportedBy: string;
+  attachments: Attachment[];
+}
+
 interface DisciplineModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (incidentData: any) => void;
-  incidentData?: any;
+  onSave: (incidentData: IncidentData) => void;
+  incidentData?: Partial<IncidentData>;
   isEdit?: boolean;
-  students?: any[];
+  students?: Student[];
 }
 
 const DisciplineModal: React.FC<DisciplineModalProps> = ({
@@ -27,25 +60,28 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
 
   const allStudents = students.length > 0 ? students : defaultStudents;
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<IncidentData>({
     studentId: incidentData?.studentId || '',
     studentName: incidentData?.studentName || '',
     studentClass: incidentData?.studentClass || '',
     incidentDate: incidentData?.incidentDate || new Date().toISOString().split('T')[0],
-    type: incidentData?.type || '',
+    type: incidentData?.type || 'retard',
     description: incidentData?.description || '',
-    severity: incidentData?.severity || 'minor',
+    severity: incidentData?.severity || 'moyen',
     location: incidentData?.location || '',
     witnesses: incidentData?.witnesses || '',
     actionTaken: incidentData?.actionTaken || '',
     parentNotified: incidentData?.parentNotified !== undefined ? incidentData.parentNotified : true,
     followUp: incidentData?.followUp || '',
     reportedBy: incidentData?.reportedBy || '',
-    attachments: incidentData?.attachments || []
+    attachments: incidentData?.attachments || [] as Attachment[]
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type } = e.target;
+    const target = e.target as HTMLInputElement; // Type assertion for checkbox
+    const checked = target.type === 'checkbox' ? target.checked : undefined;
+    
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -69,18 +105,18 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const newAttachments = Array.from(files).map(file => ({
+      const newAttachments: Attachment[] = Array.from(files).map(file => ({
         name: file.name,
         type: file.type,
         size: file.size,
         uploadDate: new Date().toISOString(),
-        // Dans une implémentation réelle, vous téléchargeriez le fichier et stockeriez l'URL
+        file,
         url: URL.createObjectURL(file)
       }));
       
       setFormData(prev => ({
         ...prev,
-        attachments: [...prev.attachments, ...newAttachments]
+        attachments: [...(prev.attachments || []), ...newAttachments]
       }));
     }
   };
@@ -88,7 +124,7 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
   const handleRemoveAttachment = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      attachments: prev.attachments.filter((_, i) => i !== index)
+      attachments: prev.attachments.filter((_, i: number) => i !== index)
     }));
   };
 
@@ -379,6 +415,7 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
                 type="file"
                 multiple
                 onChange={handleFileChange}
+                aria-label="Ajouter des pièces justificatives"
                 className="block w-full text-sm text-gray-500 dark:text-gray-400
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-lg file:border-0

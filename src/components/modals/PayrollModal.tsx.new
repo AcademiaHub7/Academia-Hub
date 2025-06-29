@@ -1,0 +1,532 @@
+import React, { useState, useCallback, useEffect } from 'react';
+import FormModal from './FormModal';
+import { DollarSign, Save, Calculator, FileText, User } from 'lucide-react';
+import MonthPicker from '../common/MonthPicker';
+
+// Define interfaces for our data types
+interface Allowances {
+  transport: number;
+  housing: number;
+  responsibility: number;
+  performance: number;
+  other: number;
+}
+
+interface Benefits {
+  vehicle: boolean;
+  housing: boolean;
+  phone: boolean;
+}
+
+interface Deductions {
+  advance: number;
+  loan: number;
+  other: number;
+}
+
+interface Overtime {
+  hours: number;
+  rate: number;
+}
+
+interface Employee {
+  id: number;
+  name: string;
+  position: string;
+  department: string;
+  baseSalary: number;
+  type?: 'permanent' | 'vacataire';
+  workingHours?: number;
+  hourlyRate?: number;
+  allowances?: Partial<Allowances>;
+  benefits?: Partial<Benefits>;
+  deductions?: Partial<Deductions>;
+  overtime?: Partial<Overtime>;
+  absences?: number;
+  paymentMethod?: string;
+  bankDetails?: string;
+  comments?: string;
+}
+
+interface PayrollData {
+  id?: number;
+  employeeId: number | string;
+  employeeName: string;
+  employeeType: 'permanent' | 'vacataire';
+  payPeriod: string;
+  baseSalary: number;
+  workingHours: number;
+  hourlyRate: number;
+  allowances: Allowances;
+  benefits: Benefits;
+  deductions: Deductions;
+  overtime: Overtime;
+  absences: number;
+  paymentMethod: string;
+  bankDetails: string;
+  comments: string;
+  grossSalary: number;
+  netSalary: number;
+  includeAllowances: boolean;
+  includeOvertime: boolean;
+}
+
+interface PayrollModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (payrollData: PayrollData) => void;
+  employeeData?: Employee;
+  isEdit?: boolean;
+}
+
+const PayrollModal: React.FC<PayrollModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  employeeData,
+  isEdit = false
+}) => {
+  // Constants for payroll calculations
+  const CNSS_EMPLOYEE_RATE = 3.6; // 3.6% employee contribution
+  const CNSS_EMPLOYER_RATE = 16.4; // 16.4% employer contribution
+  const CNSS_CEILING = 1000000; // CNSS ceiling in FCFA
+  const PROFESSIONAL_TRAINING_TAX = 1.2; // Professional training tax 1.2%
+
+
+  // Define the form data type
+  type FormData = Omit<PayrollData, 'id' | 'grossSalary' | 'netSalary' | 'includeAllowances' | 'includeOvertime'> & {
+    employeeId: string | number;
+    employeeName: string;
+    payPeriod: string;
+    paymentMethod: string;
+    bankDetails: string;
+    comments: string;
+  };
+
+  // Form state
+  const [formData, setFormData] = useState<FormData>({
+    employeeId: employeeData?.id?.toString() || '',
+    employeeName: employeeData?.name || '',
+    employeeType: employeeData?.type || 'permanent',
+    payPeriod: new Date().toISOString().slice(0, 7), // YYYY-MM format
+    baseSalary: employeeData?.baseSalary || 0,
+    workingHours: employeeData?.workingHours || 0,
+    hourlyRate: employeeData?.hourlyRate || 0,
+    allowances: {
+      transport: 0,
+      housing: 0,
+      responsibility: 0,
+      performance: 0,
+      other: 0,
+      ...employeeData?.allowances
+    },
+    benefits: {
+      vehicle: false,
+      housing: false,
+      phone: false,
+      ...employeeData?.benefits
+    },
+    deductions: {
+      advance: 0,
+      loan: 0,
+      other: 0,
+      ...employeeData?.deductions
+    },
+    overtime: {
+      hours: 0,
+      rate: 1.25, // 25% overtime rate by default
+      ...employeeData?.overtime
+    },
+    absences: employeeData?.absences || 0,
+    paymentMethod: employeeData?.paymentMethod || 'bank',
+    bankDetails: employeeData?.bankDetails || '',
+    comments: employeeData?.comments || ''
+  });
+
+  // Calculated results state
+  const [calculatedResults, setCalculatedResults] = useState({
+    grossSalary: 0,
+    cnssSalary: 0,
+    cnssEmployee: 0,
+    cnssEmployer: 0,
+    taxableIncome: 0,
+    irpp: 0,
+    netSalary: 0,
+    totalEmployerCost: 0
+  });
+
+  // Handle form field changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target as HTMLInputElement;
+    
+    // Handle nested objects (allowances, benefits, deductions, overtime)
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      
+      setFormData(prev => {
+        if (parent === 'allowances' || parent === 'deductions') {
+          return {
+            ...prev,
+            [parent]: {
+              ...prev[parent as keyof typeof prev] as Record<string, any>,
+              [child]: parseFloat(value) || 0
+            }
+          };
+        } else if (parent === 'benefits') {
+          return {
+            ...prev,
+            benefits: {
+              ...prev.benefits,
+              [child]: (e.target as HTMLInputElement).checked
+            }
+          };
+        } else if (parent === 'overtime') {
+          return {
+            ...prev,
+            overtime: {
+              ...prev.overtime,
+              [child]: parseFloat(value) || 0
+            }
+          };
+        }
+        
+        return { ...prev };
+      });
+    } else {
+      // Handle simple fields
+      const newValue = type === 'checkbox' 
+        ? (e.target as HTMLInputElement).checked 
+        : type === 'number' 
+          ? parseFloat(value) || 0 
+          : value;
+          
+      setFormData(prev => ({
+        ...prev,
+        [name]: newValue
+      }));
+    }
+  };
+
+  // Calculate IRPP tax based on income brackets
+  const calculateIRPP = useCallback((taxableIncome: number): number => {
+    // IRPP brackets (Impôt sur le Revenu des Personnes Physiques) in Benin
+    const IRPP_BRACKETS = [
+      { min: 0, max: 50000, rate: 0 },
+      { min: 50001, max: 130000, rate: 10 },
+      { min: 130001, max: 280000, rate: 15 },
+      { min: 280001, max: 530000, rate: 20 },
+      { min: 530001, max: 1000000, rate: 25 },
+      { min: 1000001, max: Infinity, rate: 30 }
+    ];
+
+    let tax = 0;
+    let previousMax = 0;
+    
+    for (const bracket of IRPP_BRACKETS) {
+      if (taxableIncome > bracket.min) {
+        const bracketAmount = Math.min(taxableIncome, bracket.max) - previousMax;
+        tax += (bracketAmount * (bracket.rate || 0)) / 100;
+        previousMax = bracket.max;
+      } else {
+        break;
+      }
+    }
+    
+    return Math.round(tax);
+  }, []);
+
+  // Calculate complete payroll
+  const calculatePayroll = useCallback((): void => {
+    let grossSalary = 0;
+    
+    // Calculate gross salary based on employee type
+    if (formData.employeeType === 'permanent') {
+      // For permanent employees, use base salary
+      grossSalary = formData.baseSalary;
+      
+      // Add allowances
+      const totalAllowances = Object.values(formData.allowances).reduce((sum, value) => sum + (value as number), 0);
+      grossSalary += totalAllowances;
+      
+      // Add overtime
+      const overtimePay = formData.baseSalary / 173.33 * formData.overtime.hours * formData.overtime.rate;
+      grossSalary += overtimePay;
+      
+      // Deduct for unexcused absences
+      const dailyRate = formData.baseSalary / 22; // 22 working days per month on average
+      grossSalary -= dailyRate * formData.absences;
+    } else {
+      // For temporary workers, calculate based on hours worked
+      grossSalary = formData.hourlyRate * formData.workingHours;
+    }
+    
+    // Calculate CNSS contribution (capped)
+    const cnssSalary = Math.min(grossSalary, CNSS_CEILING);
+    const cnssEmployee = (cnssSalary * CNSS_EMPLOYEE_RATE) / 100;
+    const cnssEmployer = (cnssSalary * CNSS_EMPLOYER_RATE) / 100;
+    
+    // Calculate taxable income
+    const taxableIncome = grossSalary - cnssEmployee;
+    
+    // Calculate IRPP
+    const irpp = calculateIRPP(taxableIncome);
+    
+    // Other deductions
+    const totalDeductions = Object.values(formData.deductions).reduce((sum, value) => sum + (value as number), 0);
+    
+    // Calculate net salary
+    const netSalary = taxableIncome - irpp - totalDeductions;
+    
+    // Total employer cost
+    const trainingTax = (grossSalary * PROFESSIONAL_TRAINING_TAX) / 100;
+    const totalEmployerCost = grossSalary + cnssEmployer + trainingTax;
+    
+    // Update calculated results
+    setCalculatedResults({
+      grossSalary,
+      cnssSalary,
+      cnssEmployee,
+      cnssEmployer,
+      taxableIncome,
+      irpp,
+      netSalary,
+      totalEmployerCost
+    });
+  }, [formData, CNSS_CEILING, CNSS_EMPLOYEE_RATE, CNSS_EMPLOYER_RATE, PROFESSIONAL_TRAINING_TAX, calculateIRPP]);
+
+  // Recalculate when form data changes
+  useEffect(() => {
+    calculatePayroll();
+  }, [calculatePayroll]);
+
+  // Format currency in FCFA
+  const formatAmount = (amount: number): string => {
+    return amount.toLocaleString('fr-FR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  };
+
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Prepare data to send
+    const payrollData: PayrollData = {
+      ...formData,
+      employeeId: Number(formData.employeeId) || 0,
+      employeeName: formData.employeeName,
+      employeeType: formData.employeeType,
+      payPeriod: formData.payPeriod,
+      baseSalary: formData.baseSalary,
+      workingHours: formData.workingHours,
+      hourlyRate: formData.hourlyRate,
+      allowances: { ...formData.allowances },
+      benefits: { ...formData.benefits },
+      deductions: { ...formData.deductions },
+      overtime: { ...formData.overtime },
+      absences: formData.absences,
+      paymentMethod: formData.paymentMethod,
+      bankDetails: formData.bankDetails,
+      comments: formData.comments,
+      grossSalary: calculatedResults.grossSalary,
+      netSalary: calculatedResults.netSalary,
+      includeAllowances: true,
+      includeOvertime: formData.overtime.hours > 0
+    };
+    
+    onSave(payrollData);
+    onClose();
+  };
+
+  return (
+    <FormModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEdit ? "Modifier une fiche de paie" : "Nouvelle fiche de paie"}
+      size="xl"
+      footer={
+        <div className="flex justify-between">
+          <div>
+            <button
+              type="button"
+              onClick={calculatePayroll}
+              className="px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-800 flex items-center"
+            >
+              <Calculator className="w-4 h-4 mr-2" />
+              Recalculer
+            </button>
+          </div>
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              form="payroll-form"
+              className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800 flex items-center"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {isEdit ? "Mettre à jour" : "Enregistrer"}
+            </button>
+          </div>
+        </div>
+      }
+    >
+      <form id="payroll-form" onSubmit={handleSubmit} className="space-y-6">
+        {/* Basic Information */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+            <User className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+            Informations de l'employé
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                ID Employé <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="employeeId"
+                name="employeeId"
+                value={formData.employeeId}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="employeeName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nom complet <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="employeeName"
+                name="employeeName"
+                value={formData.employeeName}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="employeeType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Type d'employé <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="employeeType"
+                name="employeeType"
+                value={formData.employeeType}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
+                required
+              >
+                <option value="permanent">Permanent</option>
+                <option value="vacataire">Vacataire</option>
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="payPeriod" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Période de paie <span className="text-red-500">*</span>
+              </label>
+              <MonthPicker
+                id="payPeriod"
+                name="payPeriod"
+                value={formData.payPeriod}
+                onChange={handleChange}
+                className="w-full"
+                required
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Salary Information */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+            <DollarSign className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
+            Informations salariales
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="baseSalary" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Salaire de base (FCFA) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                id="baseSalary"
+                name="baseSalary"
+                value={formData.baseSalary || ''}
+                onChange={handleChange}
+                min="0"
+                step="100"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="workingHours" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Heures travaillées
+              </label>
+              <input
+                type="number"
+                id="workingHours"
+                name="workingHours"
+                value={formData.workingHours || ''}
+                onChange={handleChange}
+                min="0"
+                max="300"
+                step="0.5"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="hourlyRate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Taux horaire (FCFA)
+              </label>
+              <input
+                type="number"
+                id="hourlyRate"
+                name="hourlyRate"
+                value={formData.hourlyRate || ''}
+                onChange={handleChange}
+                min="0"
+                step="50"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="absences" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Jours d'absence non justifiés
+              </label>
+              <input
+                type="number"
+                id="absences"
+                name="absences"
+                value={formData.absences || ''}
+                onChange={handleChange}
+                min="0"
+                max="31"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+      </form>
+    </FormModal>
+  );
+};
+
+export default PayrollModal;

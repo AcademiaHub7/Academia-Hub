@@ -232,4 +232,7 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
   );
 };
 
+// Export the Equipment type and EquipmentModal component
+export type { Equipment };
+
 export default EquipmentModal;

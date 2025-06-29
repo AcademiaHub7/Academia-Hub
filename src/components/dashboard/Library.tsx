@@ -1,28 +1,28 @@
 import React, { useState } from 'react';
+import '../../styles/dashboardStyles.css';
 import { 
   BookOpen, 
   Search, 
   Plus, 
-  Filter,
-  Download,
-  Upload,
-  QrCode,
-  Calendar,
-  User,
+  Star,
+  Heart,
   Clock,
   AlertTriangle,
   CheckCircle,
-  Star,
+  TrendingUp,
+  Upload,
+  Download,
+  QrCode,
+  Calendar,
   Eye,
   Edit,
-  Trash2,
   BarChart3,
   Users,
-  TrendingUp,
-  Heart,
   Bookmark,
-  RefreshCw
+  RefreshCw,
+  Filter
 } from 'lucide-react';
+// Progress bar styles are now in dashboardStyles.css
 
 const Library: React.FC = () => {
   const [activeTab, setActiveTab] = useState('catalog');
@@ -318,6 +318,7 @@ const Library: React.FC = () => {
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
+                    aria-label="Filtrer par catégorie"
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="all">Toutes catégories</option>
@@ -329,12 +330,20 @@ const Library: React.FC = () => {
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                    <Filter className="w-4 h-4 mr-2" />
+                  <button 
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    aria-label="Ouvrir les filtres avancés"
+                    title="Filtres avancés"
+                  >
+                    <Filter className="w-4 h-4 mr-2" aria-hidden="true" />
                     Filtres avancés
                   </button>
-                  <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                    <Upload className="w-4 h-4 mr-2" />
+                  <button 
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    aria-label="Importer un fichier CSV"
+                    title="Importer CSV"
+                  >
+                    <Upload className="w-4 h-4 mr-2" aria-hidden="true" />
                     Import CSV
                   </button>
                 </div>
@@ -382,14 +391,29 @@ const Library: React.FC = () => {
                           {book.available}/{book.copies} exemplaires
                         </p>
                         <div className="flex space-x-2 mt-3">
-                          <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
-                            <Eye className="w-4 h-4" />
+                          <button 
+                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                            aria-label={`Voir les détails de ${book.title}`}
+                            title="Voir les détails"
+                          >
+                            <Eye className="w-4 h-4" aria-hidden="true" />
+                            <span className="sr-only">Voir les détails</span>
                           </button>
-                          <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                            <Edit className="w-4 h-4" />
+                          <button 
+                            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                            aria-label={`Modifier ${book.title}`}
+                            title="Modifier"
+                          >
+                            <Edit className="w-4 h-4" aria-hidden="true" />
+                            <span className="sr-only">Modifier</span>
                           </button>
-                          <button className="p-2 text-green-600 hover:bg-green-100 rounded-lg">
-                            <Bookmark className="w-4 h-4" />
+                          <button 
+                            className="p-2 text-green-600 hover:bg-green-100 rounded-lg"
+                            aria-label={`Réserver ${book.title}`}
+                            title="Réserver"
+                          >
+                            <Bookmark className="w-4 h-4" aria-hidden="true" />
+                            <span className="sr-only">Réserver</span>
                           </button>
                         </div>
                       </div>
@@ -535,19 +559,23 @@ const Library: React.FC = () => {
                       <div className="text-right">
                         <div className="flex items-center mb-2">
                           <span className="text-sm text-gray-600">Score IA: </span>
-                          <span className="ml-1 text-lg font-bold text-blue-600">{rec.score}%</span>
                         </div>
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                        <div className="w-20 bg-gray-200 rounded-full h-2 overflow-hidden">
                           <div 
-                            className="bg-blue-600 h-2 rounded-full" 
-                            style={{ width: `${rec.score}%` }}
-                          ></div>
+                            className={`h-2 rounded-full ${rec.score > 70 ? 'progress-bar-fill-score-high' : 
+                                             rec.score > 40 ? 'progress-bar-fill-score-medium' : 
+                                             'progress-bar-fill-score-low'} w-${Math.floor(rec.score / 10) * 10}`}
+                          />
                         </div>
                         <div className="flex space-x-2 mt-3">
                           <button className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200">
                             Voir détails
                           </button>
-                          <button className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200">
+                          <button 
+                            className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200"
+                            aria-label="Recommander ce livre"
+                            title="Recommander"
+                          >
                             Recommander
                           </button>
                         </div>
@@ -703,13 +731,25 @@ const Library: React.FC = () => {
                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">Actions rapides</h4>
                   <div className="space-y-2">
-                    <button className="w-full px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200">
+                    <button 
+                      className="w-full px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200"
+                      aria-label="Scanner un livre avec le QR Code"
+                      title="Scanner QR Code"
+                    >
                       Scanner par QR Code
                     </button>
-                    <button className="w-full px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200">
+                    <button 
+                      className="w-full px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200"
+                      aria-label="Importer des livres à partir d'un fichier"
+                      title="Importer des livres"
+                    >
                       Import par fichier
                     </button>
-                    <button className="w-full px-3 py-2 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200">
+                    <button 
+                      className="w-full px-3 py-2 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200"
+                      aria-label="Générer un rapport détaillé"
+                      title="Rapport détaillé"
+                    >
                       Rapport détaillé
                     </button>
                   </div>

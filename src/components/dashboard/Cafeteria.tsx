@@ -2,13 +2,10 @@ import React, { useState } from 'react';
 import { 
   UtensilsCrossed, 
   Plus, 
-  Search, 
-  Filter,
   Calendar,
   Users,
   AlertTriangle,
   CheckCircle,
-  Settings,
   Heart,
   ShoppingCart,
   BarChart3,
@@ -25,10 +22,25 @@ import {
 } from 'lucide-react';
 import { MenuModal } from '../modals';
 
+interface Menu {
+  id: string;
+  date: string;
+  type: string;
+  starter: string;
+  main: string;
+  side: string;
+  dessert: string;
+  nutritionalScore: 'A' | 'B' | 'C' | 'D';
+  allergens: string[];
+  cost: number;
+  reservations: number;
+  status: 'confirmed' | 'planned' | 'cancelled';
+}
+
 const Cafeteria: React.FC = () => {
   const [activeTab, setActiveTab] = useState('menus');
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
-  const [selectedMenu, setSelectedMenu] = useState<any>(null);
+  const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const cafeteriaStats = [
@@ -71,11 +83,11 @@ const Cafeteria: React.FC = () => {
       main: 'Poulet rôti aux herbes',
       side: 'Riz pilaf',
       dessert: 'Yaourt aux fruits',
-      nutritionalScore: 'A',
+      nutritionalScore: 'A' as const,
       allergens: ['Gluten', 'Lactose'],
       cost: 4.50,
       reservations: 1156,
-      status: 'confirmed'
+      status: 'confirmed' as const
     },
     {
       id: 'MENU-2024-01-23-001',
@@ -85,11 +97,11 @@ const Cafeteria: React.FC = () => {
       main: 'Poisson grillé',
       side: 'Haricots verts',
       dessert: 'Compote de pommes',
-      nutritionalScore: 'A',
+      nutritionalScore: 'A' as const,
       allergens: ['Poisson'],
       cost: 4.20,
       reservations: 1089,
-      status: 'planned'
+      status: 'planned' as const
     },
     {
       id: 'MENU-2024-01-24-001',
@@ -99,11 +111,11 @@ const Cafeteria: React.FC = () => {
       main: 'Bœuf bourguignon',
       side: 'Purée de pommes de terre',
       dessert: 'Tarte aux fruits',
-      nutritionalScore: 'B',
+nutritionalScore: 'B' as const,
       allergens: ['Gluten', 'Lactose', 'Œufs'],
       cost: 4.80,
       reservations: 1203,
-      status: 'planned'
+      status: 'planned' as const
     }
   ];
 
@@ -278,13 +290,13 @@ const Cafeteria: React.FC = () => {
     setIsMenuModalOpen(true);
   };
 
-  const handleEditMenu = (menu: any) => {
+  const handleEditMenu = (menu: Menu) => {
     setIsEditMode(true);
     setSelectedMenu(menu);
     setIsMenuModalOpen(true);
   };
 
-  const handleSaveMenu = (menuData: any) => {
+  const handleSaveMenu = (menuData: Menu) => {
     console.log('Saving menu:', menuData);
     // Ici, vous implémenteriez la logique pour sauvegarder le menu
     setIsMenuModalOpen(false);
@@ -438,17 +450,27 @@ const Cafeteria: React.FC = () => {
                       <div className="text-right">
                         <p className="text-sm text-gray-600 mb-2">Allergènes: {menu.allergens.join(', ')}</p>
                         <div className="flex space-x-2">
-                          <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
-                            <Eye className="w-4 h-4" />
+                          <button 
+                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                            aria-label="Voir les détails du menu"
+                            title="Voir les détails"
+                          >
+                            <Eye className="w-4 h-4" aria-hidden="true" />
                           </button>
                           <button 
                             onClick={() => handleEditMenu(menu)}
                             className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                            aria-label="Modifier le menu"
+                            title="Modifier"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-4 h-4" aria-hidden="true" />
                           </button>
-                          <button className="p-2 text-green-600 hover:bg-green-100 rounded-lg">
-                            <CheckCircle className="w-4 h-4" />
+                          <button 
+                            className="p-2 text-green-600 hover:bg-green-100 rounded-lg"
+                            aria-label="Valider le menu"
+                            title="Valider"
+                          >
+                            <CheckCircle className="w-4 h-4" aria-hidden="true" />
                           </button>
                         </div>
                       </div>
@@ -591,14 +613,26 @@ const Cafeteria: React.FC = () => {
                       </div>
                       
                       <div className="flex space-x-2">
-                        <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
-                          <Edit className="w-4 h-4" />
+                        <button 
+                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                          aria-label="Modifier l'article"
+                          title="Modifier"
+                        >
+                          <Edit className="w-4 h-4" aria-hidden="true" />
                         </button>
-                        <button className="p-2 text-green-600 hover:bg-green-100 rounded-lg">
-                          <ShoppingCart className="w-4 h-4" />
+                        <button 
+                          className="p-2 text-green-600 hover:bg-green-100 rounded-lg"
+                          aria-label="Ajouter au panier"
+                          title="Ajouter au panier"
+                        >
+                          <ShoppingCart className="w-4 h-4" aria-hidden="true" />
                         </button>
-                        <button className="p-2 text-red-600 hover:bg-red-100 rounded-lg">
-                          <Trash2 className="w-4 h-4" />
+                        <button 
+                          className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
+                          aria-label="Supprimer l'article"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -915,14 +949,15 @@ const Cafeteria: React.FC = () => {
         </div>
       </div>
 
-      {/* Menu Modal */}
-      <MenuModal
-        isOpen={isMenuModalOpen}
-        onClose={() => setIsMenuModalOpen(false)}
-        onSave={handleSaveMenu}
-        menu={selectedMenu}
-        isEdit={isEditMode}
-      />
+      {isMenuModalOpen && (
+        <MenuModal
+          isOpen={isMenuModalOpen}
+          onClose={() => setIsMenuModalOpen(false)}
+          onSave={handleSaveMenu}
+          menu={selectedMenu || undefined}
+          isEdit={isEditMode}
+        />
+      )}
     </div>
   );
 };

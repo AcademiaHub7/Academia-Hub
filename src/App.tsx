@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
@@ -45,6 +46,29 @@ function App() {
     <AuthProvider>
       <TenantProvider>
         <ThemeProvider>
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: 'var(--bg-color)',
+                color: 'var(--text-color)',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+              },
+              success: {
+                iconTheme: {
+                  primary: '#10B981',
+                  secondary: 'white',
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: '#EF4444',
+                  secondary: 'white',
+                },
+              },
+            }}
+          />
           <Router>
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
               <Routes>

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   MessageSquare, 
   Send, 
-  Users, 
   Mail,
   Phone,
   Bell,
@@ -10,8 +9,7 @@ import {
   Search,
   Filter,
   CheckCircle,
-  Clock,
-  AlertCircle
+  Clock
 } from 'lucide-react';
 import { MessageModal } from '../modals';
 
@@ -160,7 +158,15 @@ const Communication: React.FC = () => {
     setIsMessageModalOpen(true);
   };
 
-  const handleSendMessage = (messageData: any) => {
+  interface MessageData {
+    type: string;
+    recipients: string;
+    subject: string;
+    content: string;
+    attachments?: File[];
+  }
+
+  const handleSendMessage = (messageData: MessageData) => {
     console.log('Sending message:', messageData);
     // Ici, vous implémenteriez la logique d'envoi du message
     setIsMessageModalOpen(false);
@@ -458,10 +464,14 @@ const Communication: React.FC = () => {
               <div className="grid lg:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="messageType" className="block text-sm font-medium text-gray-700 mb-2">
                       Type de message
                     </label>
-                    <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <select 
+                      id="messageType"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      aria-label="Sélectionnez le type de message"
+                    >
                       <option>SMS</option>
                       <option>Email</option>
                       <option>Notification push</option>
@@ -469,10 +479,14 @@ const Communication: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="recipients" className="block text-sm font-medium text-gray-700 mb-2">
                       Destinataires
                     </label>
-                    <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <select 
+                      id="recipients"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      aria-label="Sélectionnez les destinataires"
+                    >
                       <option>Tous les parents</option>
                       <option>Parents 3ème A</option>
                       <option>Parents 2nde B</option>

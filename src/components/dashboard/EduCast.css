@@ -1,0 +1,130 @@
+/* Progress bar fill animation */
+.progress-bar-fill {
+  transition: width 0.3s ease;
+}
+
+.progress-bar-fill[data-percentage] {
+  width: var(--progress-width, 0%);
+}
+
+/* Bar chart styles */
+.bar-chart-bar {
+  height: 0;
+  transition: height 0.5s ease;
+}
+
+/* Dynamic bar chart height */
+.bar-chart-bar[data-bar-height] {
+  height: attr(data-bar-height);
+  transition: height 0.5s ease;
+}
+
+/* Progress indicator styles */
+.progress-indicator[data-progress-width] {
+  width: attr(data-progress-width);
+  transition: width 0.3s ease;
+}
+
+/* Random width for demo purposes */
+.random-width[data-random-width] {
+  width: attr(data-random-width);
+}
+
+/* Attention graph bars */
+.attention-bar {
+  opacity: 0.7;
+  transition: height 0.3s ease, opacity 0.3s ease;
+  height: 0%;
+}
+
+.attention-bar[data-height] {
+  height: attr(data-height) * 1%;
+}
+
+.attention-bar.highlighted {
+  opacity: 1;
+}
+
+/* Voice preview button */
+.voice-preview-button {
+  transition: background-color 0.2s;
+}
+
+/* Animation for active elements */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* Accessible focus styles */
+button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* Custom scrollbar for better accessibility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Dark mode scrollbar */
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: #2d3748;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4a5568;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #718096;
+}
+
+/* Progress indicator */
+.progress-indicator {
+  width: 0%;
+  transition: width 0.3s ease;
+  height: 0.25rem;
+  background-color: #3b82f6; /* blue-500 */
+}
+
+.progress-indicator[data-progress] {
+  width: attr(data-progress) * 1%;
+}
+
+/* Progress bar container */
+.progress-container {
+  position: relative;
+  height: 1px;
+  background-color: #e5e7eb; /* gray-200 */
+  margin-top: 0.5rem;
+}
+
+.dark .progress-container {
+  background-color: #374151; /* gray-700 */
+}
+
+/* Dynamic width elements */
+.dynamic-width {
+  width: var(--dynamic-width, auto);
+}

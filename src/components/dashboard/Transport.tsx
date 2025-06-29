@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+// Import shared dashboard styles
+import '../../styles/dashboardStyles.css';
 import { 
   Bus, 
   Plus, 
@@ -9,28 +11,38 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle,
-  Settings,
-  Fuel,
   Wrench,
   Eye,
   Edit,
   Download,
   Navigation,
   Phone,
-  Calendar,
   BarChart3,
   TrendingUp,
   Activity,
-  Shield,
   Route,
   UserCheck
 } from 'lucide-react';
+
+interface Vehicle {
+  id?: string;
+  registration: string;
+  model: string;
+  capacity: number;
+  driverId?: string;
+  status: string;
+  mileage: number;
+  lastMaintenance?: string;
+  nextMaintenance?: string;
+  fuel?: number;
+  students?: number;
+}
 import { VehicleModal } from '../modals';
 
 const Transport: React.FC = () => {
   const [activeTab, setActiveTab] = useState('fleet');
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const transportStats = [
@@ -258,13 +270,13 @@ const Transport: React.FC = () => {
     setIsVehicleModalOpen(true);
   };
 
-  const handleEditVehicle = (vehicle: any) => {
+  const handleEditVehicle = (vehicle: Vehicle) => {
     setIsEditMode(true);
     setSelectedVehicle(vehicle);
     setIsVehicleModalOpen(true);
   };
 
-  const handleSaveVehicle = (vehicleData: any) => {
+  const handleSaveVehicle = (vehicleData: Omit<Vehicle, 'id'> & { id?: string }) => {
     console.log('Saving vehicle:', vehicleData);
     setIsVehicleModalOpen(false);
     // Ici, vous implémenteriez la logique pour sauvegarder le véhicule
@@ -398,22 +410,20 @@ const Transport: React.FC = () => {
                         <div>
                           <p className="text-sm text-gray-600">Carburant</p>
                           <p className={`text-lg font-bold ${getFuelColor(vehicle.fuel)}`}>{vehicle.fuel}%</p>
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mt-1">
-                            <div 
-                              className={`h-2 rounded-full ${vehicle.fuel > 50 ? 'bg-green-600' : vehicle.fuel > 25 ? 'bg-yellow-600' : 'bg-red-600'}`}
-                              style={{ width: `${vehicle.fuel}%` }}
-                            ></div>
+                            <div className="progress-bar-container mt-1">
+                              <div 
+                                className={`progress-bar-fill ${vehicle.fuel > 50 ? 'bg-green-600' : vehicle.fuel > 25 ? 'bg-yellow-600' : 'bg-red-600'} w-${Math.round(vehicle.fuel/10)*10}`}
+                              ></div>
                           </div>
                         </div>
                         
                         <div>
                           <p className="text-sm text-gray-600">Occupation</p>
                           <p className="text-lg font-bold text-blue-600">{vehicle.students}/{vehicle.capacity}</p>
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mt-1">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${(vehicle.students / vehicle.capacity) * 100}%` }}
-                            ></div>
+                            <div className="progress-bar-container mt-1">
+                              <div 
+                                className={`progress-bar-fill progress-bar-fill-blue w-${Math.round((vehicle.students / vehicle.capacity) * 100 / 10) * 10}`}
+                              ></div>
                           </div>
                         </div>
                         
@@ -424,17 +434,30 @@ const Transport: React.FC = () => {
                       </div>
                       
                       <div className="flex space-x-2">
-                        <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
-                          <Eye className="w-4 h-4" />
+                        <button 
+                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                          aria-label={`Voir les détails du véhicule ${vehicle.name}`}
+                          title="Voir les détails"
+                        >
+                          <Eye className="w-4 h-4" aria-hidden="true" />
+                          <span className="sr-only">Voir les détails</span>
                         </button>
                         <button 
                           onClick={() => handleEditVehicle(vehicle)}
                           className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                          aria-label={`Modifier le véhicule ${vehicle.name}`}
+                          title="Modifier"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-4 h-4" aria-hidden="true" />
+                          <span className="sr-only">Modifier</span>
                         </button>
-                        <button className="p-2 text-green-600 hover:bg-green-100 rounded-lg">
-                          <Navigation className="w-4 h-4" />
+                        <button 
+                          className="p-2 text-green-600 hover:bg-green-100 rounded-lg"
+                          aria-label={`Suivre le véhicule ${vehicle.name}`}
+                          title="Suivre le véhicule"
+                        >
+                          <Navigation className="w-4 h-4" aria-hidden="true" />
+                          <span className="sr-only">Suivre le véhicule</span>
                         </button>
                       </div>
                     </div>

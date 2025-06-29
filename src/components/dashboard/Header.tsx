@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Bell, Search, User, LogOut, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -11,6 +11,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
 
   const notifications = [
     {
@@ -36,6 +37,25 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     }
   ];
 
+  useEffect(() => {
+    if (notificationButtonRef.current) {
+      notificationButtonRef.current.setAttribute('aria-expanded', String(showNotifications));
+      notificationButtonRef.current.setAttribute('aria-haspopup', 'dialog');
+    }
+  }, [showNotifications]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!notificationButtonRef.current?.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => {
+      document.removeEventListener('click', handleOutsideClick);
+    };
+  }, []);
+
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4 transition-colors duration-200">
       <div className="flex items-center justify-between">
@@ -43,9 +63,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         <div className="flex items-center space-x-4">
           <button
             onClick={onMenuClick}
+            aria-label="Ouvrir le menu"
+            title="Ouvrir le menu"
             className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            <span className="sr-only">Ouvrir le menu</span>
           </button>
 
           <div className="relative">
@@ -63,23 +86,37 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           {/* Theme toggle */}
           <button 
             onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+            title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             {theme === 'dark' ? (
-              <Sun className="w-5 h-5 text-yellow-400" />
+              <>
+                <Sun className="w-5 h-5 text-yellow-400" />
+                <span className="sr-only">Passer en mode clair</span>
+              </>
             ) : (
-              <Moon className="w-5 h-5 text-gray-600" />
+              <>
+                <Moon className="w-5 h-5 text-gray-600" />
+                <span className="sr-only">Passer en mode sombre</span>
+              </>
             )}
           </button>
 
           {/* Notifications */}
           <div className="relative">
             <button 
+              ref={notificationButtonRef}
               className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => setShowNotifications(!showNotifications)}
+              aria-label="Notifications"
+              title="Notifications"
             >
               <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full">
+                <span className="sr-only">Nouvelles notifications</span>
+              </span>
+              <span className="sr-only">Afficher les notifications</span>
             </button>
 
             {/* Notifications dropdown */}
@@ -129,10 +166,17 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </div>
             
             <div className="relative group">
-              <button className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <button 
+                className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Menu utilisateur"
+                title="Menu utilisateur"
+                aria-haspopup="menu"
+                aria-expanded="false"
+              >
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-white" />
                 </div>
+                <span className="sr-only">Menu utilisateur</span>
               </button>
               
               {/* Dropdown menu */}

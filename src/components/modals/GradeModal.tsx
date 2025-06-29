@@ -1,12 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import FormModal from './FormModal';
 import { Save, BookOpen, Brain } from 'lucide-react';
+
+interface Student {
+  id: number;
+  name: string;
+  class: string;
+  em1?: number;
+  em2?: number;
+  ec?: number;
+  ie1?: number;
+  ie2?: number;
+  ds1?: number;
+  ds2?: number;
+  grade?: string;
+  observation?: string;
+  average?: number | string;
+  appreciation?: string;
+  emoji?: string;
+}
+
+interface EvaluationData {
+  id?: string;
+  level: string;
+  class: string;
+  subject: string;
+  evaluationType: string;
+  maxScore?: number;
+  date: string;
+  period?: string;
+  students: Student[];
+}
 
 interface GradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: any) => void;
-  evaluationData?: any;
+  onSave: (data: EvaluationData) => void;
+  evaluationData?: EvaluationData;
   isEdit?: boolean;
 }
 
@@ -83,14 +113,13 @@ const GradeModal: React.FC<GradeModalProps> = ({
   ];
 
   // État initial du formulaire
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<EvaluationData>({
     level: evaluationData?.level || 'secondary',
     class: evaluationData?.class || '',
     subject: evaluationData?.subject || '',
     evaluationType: evaluationData?.evaluationType || '',
-    period: evaluationData?.period || 'trimester1',
     date: evaluationData?.date || new Date().toISOString().split('T')[0],
-    maxScore: evaluationData?.maxScore || 20,
+    maxScore: evaluationData?.maxScore !== undefined ? evaluationData.maxScore : 20,
     students: evaluationData?.students || []
   });
 
@@ -116,21 +145,37 @@ const GradeModal: React.FC<GradeModalProps> = ({
   };
 
   // Gestion des notes des élèves
-  const handleStudentGradeChange = (studentId: number, field: string, value: string) => {
+  const handleStudentGradeChange = (studentId: number, field: keyof Student, value: string) => {
     const numValue = parseFloat(value);
     
     setFormData(prev => ({
       ...prev,
-      students: prev.students.map((student: any) => 
+      students: prev.students.map(student => 
         student.id === studentId 
-          ? { ...student, [field]: isNaN(numValue) ? '' : numValue } 
+          ? { 
+              ...student, 
+              [field]: isNaN(numValue) ? undefined : numValue,
+              ...(field === 'em1' || field === 'em2' || field === 'ec' ? 
+                  { average: calculatePrimaryAverage(
+                    field === 'em1' ? numValue : student.em1 || 0,
+                    field === 'em2' ? numValue : student.em2 || 0,
+                    field === 'ec' ? numValue : student.ec || 0
+                  )} : {}),
+              ...(field === 'ie1' || field === 'ie2' || field === 'ds1' || field === 'ds2' ?
+                  { average: calculateSecondaryAverage(
+                    field === 'ie1' ? numValue : student.ie1 || 0,
+                    field === 'ie2' ? numValue : student.ie2 || 0,
+                    field === 'ds1' ? numValue : student.ds1 || 0,
+                    field === 'ds2' ? numValue : student.ds2 || 0
+                  )} : {})
+            } 
           : student
       )
     }));
   };
 
   // Calcul de la moyenne pour le niveau primaire
-  const calculatePrimaryAverage = (em1: number, em2: number, ec: number) => {
+  const calculatePrimaryAverage = (em1: number, em2: number, ec: number): string => {
     if (isNaN(em1) || isNaN(em2) || isNaN(ec)) return '';
     
     const emAverage = (em1 + em2) / 2;
@@ -138,7 +183,7 @@ const GradeModal: React.FC<GradeModalProps> = ({
   };
 
   // Calcul de la moyenne pour le niveau secondaire
-  const calculateSecondaryAverage = (ie1: number, ie2: number, ds1: number, ds2: number) => {
+  const calculateSecondaryAverage = (ie1: number, ie2: number, ds1: number, ds2: number): string => {
     // Vérifier si toutes les notes sont disponibles
     const validValues = [ie1, ie2, ds1, ds2].filter(val => !isNaN(val));
     if (validValues.length === 0) return '';
@@ -154,7 +199,7 @@ const GradeModal: React.FC<GradeModalProps> = ({
   };
 
   // Obtenir l'appréciation basée sur la note
-  const getAppreciation = (grade: number) => {
+  const getAppreciation = (grade: number): { mention: string; emoji: string } => {
     if (isNaN(grade)) return { mention: '', emoji: '' };
     
     if (formData.level === 'primary') {
@@ -177,7 +222,7 @@ const GradeModal: React.FC<GradeModalProps> = ({
   };
 
   // Obtenir la couleur basée sur la note
-  const getGradeColor = (grade: number) => {
+  const getGradeColor = (grade: number): string => {
     if (isNaN(grade)) return '';
     
     if (grade >= 16) return 'text-green-600 dark:text-green-400';
@@ -189,39 +234,89 @@ const GradeModal: React.FC<GradeModalProps> = ({
   // Soumission du formulaire
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
-    onClose();
+    
+    // Mettre à jour les moyennes avant de soumettre
+    const updatedStudents = formData.students.map(student => {
+      if (formData.level === 'primary') {
+        const average = calculatePrimaryAverage(
+          student.em1 || 0,
+          student.em2 || 0,
+          student.ec || 0
+        );
+        return { 
+          ...student, 
+          average,
+          appreciation: getAppreciation(parseFloat(average) || 0).mention
+        };
+      } else {
+        const average = calculateSecondaryAverage(
+          student.ie1 || 0,
+          student.ie2 || 0,
+          student.ds1 || 0,
+          student.ds2 || 0
+        );
+        return { 
+          ...student, 
+          average,
+          appreciation: getAppreciation(parseFloat(average) || 0).mention
+        };
+      }
+    });
+    
+    onSave({
+      ...formData,
+      students: updatedStudents
+    });
   };
 
   // Données fictives d'élèves pour la démonstration
-  const mockStudents = [
-    { id: 1, name: 'Marie Dubois', class: 'Terminale S' },
-    { id: 2, name: 'Pierre Martin', class: 'Terminale S' },
-    { id: 3, name: 'Sophie Lambert', class: 'Terminale S' },
-    { id: 4, name: 'Lucas Bernard', class: 'Terminale S' },
-    { id: 5, name: 'Emma Rodriguez', class: 'Terminale S' }
-  ];
+  const [mockStudents, setMockStudents] = useState<Student[]>([]);
+
+  // Generate a deterministic ID for form fields using student ID and field name
+  const getGradeFieldId = useCallback((student: Student, field: string, inputType: 'select' | 'text' = 'text'): string => {
+    // Create a stable ID using student ID, field name, and input type
+    // The ID will be consistent across re-renders for the same student and field
+    return `grade-${student.id}-${field}-${inputType}`;
+  }, []);
+
+  // Charger les données fictives
+  useEffect(() => {
+    const loadMockData = () => {
+      const mockData: Student[] = [
+        { id: 1, name: 'Marie Dubois', class: 'Terminale S' },
+        { id: 2, name: 'Pierre Martin', class: 'Terminale S' },
+        { id: 3, name: 'Sophie Lambert', class: 'Terminale S' },
+        { id: 4, name: 'Lucas Bernard', class: 'Terminale S' },
+        { id: 5, name: 'Emma Rodriguez', class: 'Terminale S' }
+      ];
+      setMockStudents(mockData);
+    };
+
+    loadMockData();
+  }, []);
 
   // Initialiser les élèves si nécessaire
-  React.useEffect(() => {
-    if (formData.students.length === 0) {
+  useEffect(() => {
+    if (formData.students.length === 0 && mockStudents.length > 0) {
       setFormData(prev => ({
         ...prev,
-        students: mockStudents.map(student => ({
+        students: mockStudents.map((student: Student) => ({
           ...student,
-          em1: '',
-          em2: '',
-          ec: '',
-          ie1: '',
-          ie2: '',
-          ds1: '',
-          ds2: '',
-          grade: '',
+          em1: undefined,
+          em2: undefined,
+          ec: undefined,
+          ie1: undefined,
+          ie2: undefined,
+          ds1: undefined,
+          ds2: undefined,
+          average: '',
           appreciation: ''
         }))
       }));
     }
-  }, [formData.students.length]);
+  }, [mockStudents, formData.students.length]);
+
+
 
   return (
     <FormModal
@@ -369,16 +464,16 @@ const GradeModal: React.FC<GradeModalProps> = ({
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
                 <div className="bg-white dark:bg-gray-800 p-2 rounded border border-blue-200 dark:border-blue-800">
-                  <span className="font-bold text-blue-800 dark:text-blue-300">TB</span> - Très Bien (Compétence maîtrisée)
+                  <span id="legend-grade-tb" className="font-bold text-blue-800 dark:text-blue-300">TB</span> - Très Bien (Compétence maîtrisée)
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-2 rounded border border-blue-200 dark:border-blue-800">
-                  <span className="font-bold text-blue-800 dark:text-blue-300">B</span> - Bien (Compétence en cours d'acquisition)
+                  <span id="legend-grade-b" className="font-bold text-blue-800 dark:text-blue-300">B</span> - Bien (Compétence en cours d'acquisition)
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-2 rounded border border-blue-200 dark:border-blue-800">
-                  <span className="font-bold text-blue-800 dark:text-blue-300">AB</span> - Assez Bien (Compétence partiellement acquise)
+                  <span id="legend-grade-ab" className="font-bold text-blue-800 dark:text-blue-300">AB</span> - Assez Bien (Compétence partiellement acquise)
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-2 rounded border border-blue-200 dark:border-blue-800">
-                  <span className="font-bold text-blue-800 dark:text-blue-300">I</span> - Insuffisant (Compétence non acquise)
+                  <span id="legend-grade-i" className="font-bold text-blue-800 dark:text-blue-300">I</span> - Insuffisant (Compétence non acquise)
                 </div>
               </div>
             </div>
@@ -389,7 +484,7 @@ const GradeModal: React.FC<GradeModalProps> = ({
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Élève
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th id="evaluation-header" scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Évaluation
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -398,18 +493,20 @@ const GradeModal: React.FC<GradeModalProps> = ({
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {formData.students.map((student: any) => (
+                {formData.students.map((student: Student) => (
                   <tr key={student.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{student.name}</div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">{student.class}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        value={student.grade || ''}
-                        onChange={(e) => handleStudentGradeChange(student.id, 'grade', e.target.value)}
-                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      >
+                        <select
+                          id={getGradeFieldId(student, 'grade', 'select')}
+                          aria-label={`Note de ${student.name}`}
+                          value={student.grade || ''}
+                          onChange={(e) => handleStudentGradeChange(student.id, 'grade', e.target.value)}
+                          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        >
                         <option value="">Sélectionner</option>
                         <option value="TB">TB - Très Bien</option>
                         <option value="B">B - Bien</option>
@@ -419,11 +516,13 @@ const GradeModal: React.FC<GradeModalProps> = ({
                     </td>
                     <td className="px-6 py-4">
                       <textarea
+                        id={getGradeFieldId(student, 'observation', 'text')}
                         value={student.observation || ''}
                         onChange={(e) => handleStudentGradeChange(student.id, 'observation', e.target.value)}
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         placeholder="Observations sur l'élève..."
+                        aria-label={`Observations pour ${student.name}`}
                       />
                     </td>
                   </tr>
@@ -465,12 +564,13 @@ const GradeModal: React.FC<GradeModalProps> = ({
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {formData.students.map((student: any) => {
-                  const em1 = parseFloat(student.em1);
-                  const em2 = parseFloat(student.em2);
-                  const ec = parseFloat(student.ec);
+                {formData.students.map((student: Student) => {
+                  const em1 = student.em1 !== undefined ? student.em1 : NaN;
+                  const em2 = student.em2 !== undefined ? student.em2 : NaN;
+                  const ec = student.ec !== undefined ? student.ec : NaN;
                   const average = calculatePrimaryAverage(em1, em2, ec);
-                  const appreciation = getAppreciation(parseFloat(average));
+                  const numericAverage = typeof average === 'string' ? parseFloat(average) : average;
+                  const appreciation = getAppreciation(isNaN(numericAverage) ? 0 : numericAverage);
                   
                   return (
                     <tr key={student.id}>
@@ -481,6 +581,8 @@ const GradeModal: React.FC<GradeModalProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <input
                           type="number"
+                          id={getGradeFieldId(student, 'em1')}
+                          aria-label={`Note EM1 pour ${student.name}`}
                           value={student.em1 || ''}
                           onChange={(e) => handleStudentGradeChange(student.id, 'em1', e.target.value)}
                           min="0"
@@ -492,6 +594,8 @@ const GradeModal: React.FC<GradeModalProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <input
                           type="number"
+                          id={getGradeFieldId(student, 'em2')}
+                          aria-label={`Note EM2 pour ${student.name}`}
                           value={student.em2 || ''}
                           onChange={(e) => handleStudentGradeChange(student.id, 'em2', e.target.value)}
                           min="0"
@@ -503,6 +607,8 @@ const GradeModal: React.FC<GradeModalProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <input
                           type="number"
+                          id={getGradeFieldId(student, 'ec')}
+                          aria-label={`Note EC pour ${student.name}`}
                           value={student.ec || ''}
                           onChange={(e) => handleStudentGradeChange(student.id, 'ec', e.target.value)}
                           min="0"
@@ -602,13 +708,14 @@ const GradeModal: React.FC<GradeModalProps> = ({
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {formData.students.map((student: any) => {
-                  const ie1 = parseFloat(student.ie1);
-                  const ie2 = parseFloat(student.ie2);
-                  const ds1 = parseFloat(student.ds1);
-                  const ds2 = parseFloat(student.ds2);
+                {formData.students.map((student: Student) => {
+                  const ie1 = student.ie1 !== undefined ? student.ie1 : NaN;
+                  const ie2 = student.ie2 !== undefined ? student.ie2 : NaN;
+                  const ds1 = student.ds1 !== undefined ? student.ds1 : NaN;
+                  const ds2 = student.ds2 !== undefined ? student.ds2 : NaN;
                   const average = calculateSecondaryAverage(ie1, ie2, ds1, ds2);
-                  const appreciation = getAppreciation(parseFloat(average));
+                  const numericAverage = typeof average === 'string' ? parseFloat(average) : average;
+                  const appreciation = getAppreciation(isNaN(numericAverage) ? 0 : numericAverage);
                   
                   return (
                     <tr key={student.id}>
@@ -619,6 +726,8 @@ const GradeModal: React.FC<GradeModalProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <input
                           type="number"
+                          id={getGradeFieldId(student, 'ie1')}
+                          aria-label={`Note IE1 pour ${student.name}`}
                           value={student.ie1 || ''}
                           onChange={(e) => handleStudentGradeChange(student.id, 'ie1', e.target.value)}
                           min="0"
@@ -630,6 +739,8 @@ const GradeModal: React.FC<GradeModalProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <input
                           type="number"
+                          id={getGradeFieldId(student, 'ie2')}
+                          aria-label={`Note IE2 pour ${student.name}`}
                           value={student.ie2 || ''}
                           onChange={(e) => handleStudentGradeChange(student.id, 'ie2', e.target.value)}
                           min="0"
@@ -641,6 +752,8 @@ const GradeModal: React.FC<GradeModalProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <input
                           type="number"
+                          id={getGradeFieldId(student, 'ds1')}
+                          aria-label={`Note DS1 pour ${student.name}`}
                           value={student.ds1 || ''}
                           onChange={(e) => handleStudentGradeChange(student.id, 'ds1', e.target.value)}
                           min="0"
@@ -652,6 +765,8 @@ const GradeModal: React.FC<GradeModalProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <input
                           type="number"
+                          id={getGradeFieldId(student, 'ds2')}
+                          aria-label={`Note DS2 pour ${student.name}`}
                           value={student.ds2 || ''}
                           onChange={(e) => handleStudentGradeChange(student.id, 'ds2', e.target.value)}
                           min="0"

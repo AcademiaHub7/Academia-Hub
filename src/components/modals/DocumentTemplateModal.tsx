@@ -1,14 +1,48 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, ChangeEvent } from 'react';
 import FormModal from './FormModal';
-import { FileText, Save, Upload, Download, Code, Eye, Trash2, Plus } from 'lucide-react';
+import { FileText, Save, Upload, Download, Code, Eye, Trash2, Plus, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+
+interface DocumentType {
+  id: string;
+  name: string;
+  category: string;
+}
+
+interface TemplateVariable {
+  name: string;
+  description: string;
+  type: 'text' | 'number' | 'date' | 'image' | 'html';
+  source: 'school' | 'document' | 'user' | 'student' | 'system';
+}
+
+interface TemplateZone {
+  id: string;
+  name: string;
+  type: string;
+  content: string;
+  position: string;
+}
+
+interface TemplateData {
+  name: string;
+  description: string;
+  documentType: string;
+  htmlTemplate: string;
+  cssStyles: string;
+  zones: TemplateZone[];
+  variables: TemplateVariable[];
+  isDefault: boolean;
+  isActive: boolean;
+}
 
 interface DocumentTemplateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (templateData: any) => void;
-  templateData?: any;
+  onSave: (templateData: TemplateData) => void;
+  templateData?: Partial<TemplateData>;
   isEdit?: boolean;
-  documentTypes?: any[];
+  documentTypes?: DocumentType[];
 }
 
 const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
@@ -32,9 +66,10 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
     { id: 'statistics', name: 'Statistiques', category: 'rapports' }
   ];
 
-  const allDocumentTypes = documentTypes.length > 0 ? documentTypes : defaultDocumentTypes;
+  const [documentTypesState] = useState<DocumentType[]>(documentTypes || defaultDocumentTypes);
+  const allDocumentTypes = documentTypesState;
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<TemplateData>({
     name: templateData?.name || '',
     description: templateData?.description || '',
     documentType: templateData?.documentType || '',
@@ -63,21 +98,50 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
   });
 
   const [previewMode, setPreviewMode] = useState(false);
-  const [activeTab, setActiveTab] = useState('html');
-  const [newVariable, setNewVariable] = useState({ name: '', description: '', type: 'text', source: 'document' });
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  type ActiveTab = 'general' | 'content' | 'zones' | 'variables' | 'preview' | 'html' | 'css';
+  const [activeTab, setActiveTab] = useState<ActiveTab>('general');
+
+  const [newVariable, setNewVariable] = useState<{
+    name: string;
+    description: string;
+    type: 'text' | 'number' | 'date' | 'image' | 'html';
+    source: 'school' | 'document' | 'user' | 'student' | 'system';
+  }>({
+    name: '',
+    description: '',
+    type: 'text',
+    source: 'document',
+  });
+
   const htmlEditorRef = useRef<HTMLTextAreaElement>(null);
   const cssEditorRef = useRef<HTMLTextAreaElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const target = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    const { name, value, type } = target;
+    
+    setFormData(prev => {
+      // Handle checkbox inputs
+      if (type === 'checkbox' && 'checked' in target) {
+        return {
+          ...prev,
+          [name]: (target as HTMLInputElement).checked
+        };
+      }
+      
+      // Handle other input types
+      return {
+        ...prev,
+        [name]: value
+      };
+    });
   };
 
-  const handleZoneChange = (index: number, field: string, value: string) => {
+  const handleZoneChange = (index: number, field: keyof TemplateZone, value: string): void => {
     setFormData(prev => {
       const newZones = [...prev.zones];
       newZones[index] = { ...newZones[index], [field]: value };
@@ -85,49 +149,149 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
     });
   };
 
-  const handleAddVariable = () => {
+  const handleAddVariable = (): void => {
     if (newVariable.name && newVariable.description) {
       setFormData(prev => ({
         ...prev,
-        variables: [...prev.variables, { ...newVariable }]
+        variables: [...prev.variables, { 
+          ...newVariable,
+          type: newVariable.type as 'text' | 'number' | 'date' | 'image' | 'html',
+          source: newVariable.source as 'school' | 'document' | 'user' | 'student' | 'system'
+        }]
       }));
       setNewVariable({ name: '', description: '', type: 'text', source: 'document' });
     }
   };
 
-  const handleRemoveVariable = (index: number) => {
+  const handleVariableTypeChange = (index: number, value: string) => {
+    const newVariables = [...formData.variables];
+    newVariables[index].type = value as 'text' | 'number' | 'date' | 'image' | 'html';
+    setFormData(prev => ({
+      ...prev,
+      variables: newVariables
+    }));
+  };
+
+  const handleVariableSourceChange = (index: number, value: string) => {
+    const newVariables = [...formData.variables];
+    newVariables[index].source = value as 'school' | 'document' | 'user' | 'student' | 'system';
+    setFormData(prev => ({
+      ...prev,
+      variables: newVariables
+    }));
+  };
+
+  const handleRemoveVariable = (index: number): void => {
     setFormData(prev => ({
       ...prev,
       variables: prev.variables.filter((_, i) => i !== index)
     }));
   };
 
-  const insertVariable = (variable: string) => {
-    if (htmlEditorRef.current) {
-      const cursorPos = htmlEditorRef.current.selectionStart;
-      const textBefore = formData.htmlTemplate.substring(0, cursorPos);
-      const textAfter = formData.htmlTemplate.substring(cursorPos);
+  // Overload the function to handle both one and two arguments
+  function insertVariable(variableName: string): void;
+  function insertVariable(variableName: string, target: 'html' | 'css'): void;
+  function insertVariable(variableName: string, target: 'html' | 'css' = 'html'): void {
+    const ref = target === 'html' ? htmlEditorRef : cssEditorRef;
+    const currentValue = target === 'html' ? formData.htmlTemplate : formData.cssStyles;
+    
+    if (ref.current) {
+      const cursorPos = ref.current.selectionStart;
+      const textBefore = currentValue.substring(0, cursorPos);
+      const textAfter = currentValue.substring(cursorPos);
+      const variableSyntax = target === 'html' ? `{${variableName}}` : `var(--${variableName})`;
       
-      setFormData(prev => ({
-        ...prev,
-        htmlTemplate: `${textBefore}{${variable}}${textAfter}`
-      }));
+      const update = {
+        ...formData,
+        [target === 'html' ? 'htmlTemplate' : 'cssStyles']: `${textBefore}${variableSyntax}${textAfter}`
+      };
       
-      // Restore focus and cursor position
+      setFormData(update);
+      
+      // Set focus back to the textarea
       setTimeout(() => {
-        if (htmlEditorRef.current) {
-          htmlEditorRef.current.focus();
-          htmlEditorRef.current.selectionStart = cursorPos + variable.length + 2; // +2 for the braces
-          htmlEditorRef.current.selectionEnd = cursorPos + variable.length + 2;
+        if (ref.current) {
+          const newCursorPos = cursorPos + variableSyntax.length;
+          ref.current.focus();
+          ref.current.setSelectionRange(newCursorPos, newCursorPos);
         }
       }, 0);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.name.trim()) {
+      errors.name = 'Le nom du template est requis';
+    }
+    
+    if (!formData.documentType) {
+      errors.documentType = 'Veuillez sélectionner un type de document';
+    }
+    
+    if (!formData.htmlTemplate.trim()) {
+      errors.htmlTemplate = 'Le modèle HTML est requis';
+    }
+    
+    // Validate variable names (must be alphanumeric with underscores)
+    const variableNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+    formData.variables.forEach((variable, index) => {
+      if (!variableNameRegex.test(variable.name)) {
+        errors[`variable-${index}-name`] = 'Le nom de la variable ne peut contenir que des lettres, des chiffres et des underscores';
+      }
+    });
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    onSave(formData);
-    onClose();
+    
+    if (!validateForm()) {
+      // Scroll to the first error
+      const firstError = Object.keys(formErrors)[0];
+      if (firstError) {
+        const element = document.getElementById(firstError);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.focus({ preventScroll: true });
+        }
+      }
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      onSave(formData);
+      
+      // Show success message
+      toast.success(
+        <div className="flex items-center">
+          <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+          <span>Template {isEdit ? 'mis à jour' : 'créé'} avec succès</span>
+        </div>,
+        { duration: 3000 }
+      );
+      
+      onClose();
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast.error(
+        <div className="flex items-center">
+          <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+          <span>Une erreur est survenue lors de la sauvegarde du template</span>
+        </div>,
+        { duration: 5000 }
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -148,15 +312,35 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
           <button
             type="submit"
             form="document-template-form"
-            className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 flex items-center"
+            disabled={isSubmitting}
+            className={`px-4 py-2 ${
+              isSubmitting 
+                ? 'bg-blue-400 dark:bg-blue-600 cursor-not-allowed' 
+                : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800'
+            } text-white rounded-lg flex items-center`}
           >
-            <Save className="w-4 h-4 mr-2" />
-            {isEdit ? "Mettre à jour" : "Enregistrer"}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Enregistrement...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                {isEdit ? "Mettre à jour" : "Enregistrer"}
+              </>
+            )}
           </button>
         </div>
       }
     >
-      <form id="document-template-form" onSubmit={handleSubmit} className="space-y-6">
+      <form 
+        id="document-template-form" 
+        ref={formRef}
+        onSubmit={handleSubmit} 
+        className="space-y-6"
+        noValidate
+      >
         {/* Informations de base */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
@@ -175,10 +359,19 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
+                aria-required="true"
+                aria-describedby={formErrors.name ? 'name-error' : undefined}
                 required
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className={`w-full px-3 py-2 border ${
+                  formErrors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
                 placeholder="Ex: Facture standard"
               />
+              {formErrors.name && (
+                <p id="name-error" className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {formErrors.name}
+                </p>
+              )}
             </div>
             
             <div>
@@ -194,6 +387,11 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="">Sélectionner un type</option>
+                {formErrors.documentType && (
+                  <p id="documentType-error" className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {formErrors.documentType}
+                  </p>
+                )}
                 {allDocumentTypes.map(type => (
                   <option key={type.id} value={type.id}>{type.name} ({type.category})</option>
                 ))}
@@ -294,28 +492,39 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex flex-wrap gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('general')}
+                  className={`px-4 py-2 text-sm font-medium ${
+                    activeTab === 'general'
+                      ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
+                >
+                  Général
+                </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('html')}
                   className={`px-4 py-2 text-sm font-medium ${
-                    activeTab === 'html'
+                    activeTab === 'html' || activeTab === 'css'
                       ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                 >
-                  HTML
+                  Contenu
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTab('css')}
+                  onClick={() => setActiveTab('zones')}
                   className={`px-4 py-2 text-sm font-medium ${
-                    activeTab === 'css'
+                    activeTab === 'zones'
                       ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                 >
-                  CSS
+                  Zones
                 </button>
                 <button
                   type="button"
@@ -329,6 +538,129 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
                   Variables
                 </button>
               </div>
+              
+              {/* Content sub-tabs */}
+              {(activeTab === 'html' || activeTab === 'css') && (
+                <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('html')}
+                    className={`px-4 py-2 text-sm font-medium ${
+                      activeTab === 'html'
+                        ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    HTML
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('css')}
+                    className={`px-4 py-2 text-sm font-medium ${
+                      activeTab === 'css'
+                        ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    CSS
+                  </button>
+                </div>
+              )}
+              
+              {activeTab === 'general' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Nom du template*
+                      </label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        aria-required="true"
+                        aria-describedby={formErrors.name ? 'name-error' : undefined}
+                        required
+                        className={`w-full px-3 py-2 border ${
+                          formErrors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                        placeholder="Ex: Facture standard"
+                      />
+                      {formErrors.name && (
+                        <p id="name-error" className="mt-1 text-sm text-red-600 dark:text-red-400">
+                          {formErrors.name}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="documentType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Type de document*
+                      </label>
+                      <select
+                        id="documentType"
+                        name="documentType"
+                        value={formData.documentType}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      >
+                        <option value="">Sélectionner un type</option>
+                        {documentTypes.map((type) => (
+                          <option key={type.id} value={type.id}>
+                            {type.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        id="description"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        placeholder="Description du template"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isDefault"
+                        name="isDefault"
+                        checked={formData.isDefault}
+                        onChange={handleChange}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                      />
+                      <label htmlFor="isDefault" className="text-sm text-gray-700 dark:text-gray-300">
+                        Définir comme template par défaut
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isActive"
+                        name="isActive"
+                        checked={formData.isActive}
+                        onChange={handleChange}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                      />
+                      <label htmlFor="isActive" className="text-sm text-gray-700 dark:text-gray-300">
+                        Actif
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {activeTab === 'html' && (
                 <div className="space-y-4">
@@ -345,27 +677,64 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
                     ))}
                   </div>
                   
-                  <textarea
-                    ref={htmlEditorRef}
-                    name="htmlTemplate"
-                    value={formData.htmlTemplate}
-                    onChange={handleChange}
-                    rows={15}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono"
-                  />
+                  <label htmlFor="htmlTemplate" className="sr-only">Modèle HTML</label>
+                  <div>
+                    <textarea
+                      id="htmlTemplate"
+                      ref={htmlEditorRef}
+                      name="htmlTemplate"
+                      value={formData.htmlTemplate}
+                      onChange={handleChange}
+                      aria-label="Modèle HTML"
+                      aria-required="true"
+                      rows={15}
+                      className={`w-full px-3 py-2 border ${
+                        formErrors.htmlTemplate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono`}
+                      aria-describedby={formErrors.htmlTemplate ? 'htmlTemplate-error' : undefined}
+                    />
+                    {formErrors.htmlTemplate && (
+                      <p id="htmlTemplate-error" className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {formErrors.htmlTemplate}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
               
               {activeTab === 'css' && (
-                <div>
-                  <textarea
-                    ref={cssEditorRef}
-                    name="cssStyles"
-                    value={formData.cssStyles}
-                    onChange={handleChange}
-                    rows={15}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono"
-                  />
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.variables.map((variable, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => insertVariable(variable.name, 'css' as const)}
+                        className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs hover:bg-blue-200 dark:hover:bg-blue-900/50"
+                      >
+                        {variable.name}
+                      </button>
+                    ))}
+                  </div>
+                  <label htmlFor="cssStyles" className="sr-only">Styles CSS</label>
+                  <div>
+                    <textarea
+                      id="cssStyles"
+                      ref={cssEditorRef}
+                      name="cssStyles"
+                      value={formData.cssStyles}
+                      onChange={handleChange}
+                      rows={15}
+                      aria-label="Styles CSS"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono"
+                      aria-describedby={formErrors.cssStyles ? 'cssStyles-error' : undefined}
+                    />
+                    {formErrors.cssStyles && (
+                      <p id="cssStyles-error" className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {formErrors.cssStyles}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
               
@@ -381,37 +750,73 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
                   {formData.variables.map((variable, index) => (
                     <div key={index} className="grid grid-cols-5 gap-4 items-center">
                       <div className="col-span-1">
-                        <input
-                          type="text"
-                          value={variable.name}
-                          onChange={(e) => {
-                            const newVariables = [...formData.variables];
-                            newVariables[index].name = e.target.value;
-                            setFormData({...formData, variables: newVariables});
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        />
+                        <label htmlFor={`variable-name-${index}`} className="sr-only">Nom de la variable</label>
+                        <div>
+                          <input
+                            type="text"
+                            id={`variable-name-${index}`}
+                            aria-label={`Nom de la variable ${index + 1}`}
+                            aria-required="true"
+                            aria-describedby={formErrors[`variable-${index}-name`] ? `variable-${index}-name-error` : undefined}
+                            value={variable.name}
+                            onChange={(e) => {
+                              const newVariables = [...formData.variables];
+                              newVariables[index] = {
+                                ...newVariables[index],
+                                name: e.target.value
+                              };
+                              setFormData({...formData, variables: newVariables});
+                              
+                              // Clear error when user starts typing
+                              if (formErrors[`variable-${index}-name`]) {
+                                const newErrors = {...formErrors};
+                                delete newErrors[`variable-${index}-name`];
+                                setFormErrors(newErrors);
+                              }
+                            }}
+                            className={`w-full px-3 py-2 border ${
+                              formErrors[`variable-${index}-name`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                          />
+                          {formErrors[`variable-${index}-name`] && (
+                            <p id={`variable-${index}-name-error`} className="mt-1 text-xs text-red-600 dark:text-red-400">
+                              {formErrors[`variable-${index}-name`]}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <div className="col-span-2">
+                        <label htmlFor={`variable-description-${index}`} className="sr-only">Description de la variable</label>
                         <input
+                          id={`variable-description-${index}`}
                           type="text"
                           value={variable.description}
                           onChange={(e) => {
                             const newVariables = [...formData.variables];
-                            newVariables[index].description = e.target.value;
+                            newVariables[index] = {
+                              ...newVariables[index],
+                              description: e.target.value
+                            };
                             setFormData({...formData, variables: newVariables});
                           }}
+                          aria-label={`Description de la variable ${index + 1}`}
+                          aria-required="true"
+                          aria-describedby={formErrors[`variable-${index}-description`] ? `variable-${index}-description-error` : undefined}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
+                        {formErrors[`variable-${index}-description`] && (
+                          <p id={`variable-${index}-description-error`} className="mt-1 text-xs text-red-600 dark:text-red-400">
+                            {formErrors[`variable-${index}-description`]}
+                          </p>
+                        )}
                       </div>
                       <div className="col-span-1">
+                        <label htmlFor={`variable-type-${index}`} className="sr-only">Type de variable</label>
                         <select
+                          id={`variable-type-${index}`}
                           value={variable.type}
-                          onChange={(e) => {
-                            const newVariables = [...formData.variables];
-                            newVariables[index].type = e.target.value;
-                            setFormData({...formData, variables: newVariables});
-                          }}
+                          onChange={(e) => handleVariableTypeChange(index, e.target.value)}
+                          aria-label={`Type de la variable ${index + 1}`}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         >
                           <option value="text">Texte</option>
@@ -422,13 +827,12 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
                         </select>
                       </div>
                       <div className="col-span-1 flex items-center">
+                        <label htmlFor={`variable-source-${index}`} className="sr-only">Source de la variable</label>
                         <select
+                          id={`variable-source-${index}`}
                           value={variable.source}
-                          onChange={(e) => {
-                            const newVariables = [...formData.variables];
-                            newVariables[index].source = e.target.value;
-                            setFormData({...formData, variables: newVariables});
-                          }}
+                          onChange={(e) => handleVariableSourceChange(index, e.target.value)}
+                          aria-label={`Source de la variable ${index + 1}`}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         >
                           <option value="school">École</option>
@@ -440,7 +844,9 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleRemoveVariable(index)}
-                          className="ml-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                          aria-label={`Supprimer la variable ${variable.name || index + 1}`}
+                          title={`Supprimer la variable ${variable.name || index + 1}`}
+                          className="ml-2 p-1 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -463,14 +869,24 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
                         type="text"
                         value={newVariable.description}
                         onChange={(e) => setNewVariable({...newVariable, description: e.target.value})}
+                        aria-label="Description de la nouvelle variable"
                         placeholder="Description"
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       />
                     </div>
                     <div className="col-span-1">
+                      <label htmlFor="new-variable-type" className="sr-only">Type de la nouvelle variable</label>
                       <select
+                        id="new-variable-type"
                         value={newVariable.type}
-                        onChange={(e) => setNewVariable({...newVariable, type: e.target.value})}
+                        onChange={(e) => {
+                          const value = e.target.value as 'text' | 'number' | 'date' | 'image' | 'html';
+                          setNewVariable(prev => ({
+                            ...prev,
+                            type: value
+                          }));
+                        }}
+                        aria-label="Type de la nouvelle variable"
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       >
                         <option value="text">Texte</option>
@@ -481,9 +897,18 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
                       </select>
                     </div>
                     <div className="col-span-1 flex items-center">
+                      <label htmlFor="new-variable-source" className="sr-only">Source de la nouvelle variable</label>
                       <select
+                        id="new-variable-source"
                         value={newVariable.source}
-                        onChange={(e) => setNewVariable({...newVariable, source: e.target.value})}
+                        onChange={(e) => {
+                          const value = e.target.value as 'school' | 'document' | 'user' | 'student' | 'system';
+                          setNewVariable(prev => ({
+                            ...prev,
+                            source: value
+                          }));
+                        }}
+                        aria-label="Source de la nouvelle variable"
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       >
                         <option value="school">École</option>
@@ -495,7 +920,9 @@ const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
                       <button
                         type="button"
                         onClick={handleAddVariable}
-                        className="ml-2 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
+                        aria-label="Ajouter une nouvelle variable"
+                        title="Ajouter une nouvelle variable"
+                        className="ml-2 p-1 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30"
                       >
                         <Plus className="w-4 h-4" />
                       </button>

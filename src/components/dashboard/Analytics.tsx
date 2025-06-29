@@ -3,26 +3,25 @@ import {
   BarChart3, 
   TrendingUp, 
   Users, 
-  Award,
-  Brain,
-  FileText,
-  Download,
-  Calendar,
+  CheckCircle, 
+  AlertTriangle, 
+  Brain, 
+  Calendar, 
+  Download, 
   Filter,
-  Search,
-  AlertTriangle,
-  CheckCircle,
-  Target,
-  Zap,
-  Eye,
-  Settings,
-  PieChart,
+  Star, 
+  Target, 
+  PieChart, 
   LineChart,
   Activity,
-  Star,
+  Lightbulb,
   Trophy,
-  Lightbulb
+  FileText,
+  Zap,
+  Award,
+  Eye
 } from 'lucide-react';
+import ProgressBar from '../ui/ProgressBar';
 import { AnalyticsReportModal, AIInsightModal, HonorRollModal } from '../modals';
 
 const Analytics: React.FC = () => {
@@ -219,17 +218,42 @@ const Analytics: React.FC = () => {
     setIsHonorRollModalOpen(true);
   };
 
-  const handleSaveReport = (reportData: any) => {
+  interface ReportData {
+    id: string;
+    title: string;
+    content: string;
+    date: string;
+  }
+
+  interface InsightData {
+    id: string;
+    title: string;
+    description: string;
+    date: string;
+  }
+
+  interface HonorRollData {
+    id: string;
+    title: string;
+    students: Array<{
+      id: string;
+      name: string;
+      score: number;
+    }>;
+    date: string;
+  }
+
+  const handleSaveReport = (reportData: ReportData) => {
     console.log('Saving report:', reportData);
     // Here you would typically save the report to your backend
   };
 
-  const handleSaveInsight = (insightData: any) => {
+  const handleSaveInsight = (insightData: InsightData) => {
     console.log('Saving insight:', insightData);
     // Here you would typically save the insight to your backend
   };
 
-  const handleSaveHonorRoll = (honorRollData: any) => {
+  const handleSaveHonorRoll = (honorRollData: HonorRollData) => {
     console.log('Saving honor roll:', honorRollData);
     // Here you would typically save the honor roll to your backend
   };
@@ -292,6 +316,7 @@ const Analytics: React.FC = () => {
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              aria-label="Sélectionner la période"
             >
               <option value="trimester">Trimestre</option>
               <option value="semester">Semestre</option>
@@ -305,6 +330,7 @@ const Analytics: React.FC = () => {
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              aria-label="Sélectionner la classe"
             >
               <option value="all">Toutes les classes</option>
               <option value="terminale">Terminale</option>
@@ -498,8 +524,8 @@ const Analytics: React.FC = () => {
                         <span className="ml-2 text-sm text-green-600">+1.5%</span>
                       </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-purple-600 h-2 rounded-full" style={{ width: '92.1%' }}></div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div className="bg-purple-600 h-2 rounded-full w-[92.1%]"></div>
                     </div>
                     <p className="text-sm text-gray-600">Confiance du modèle: 94%</p>
                   </div>
@@ -707,11 +733,13 @@ const Analytics: React.FC = () => {
                           <div className="flex items-center">
                             <span className="text-sm text-gray-600">Confiance: </span>
                             <span className="ml-1 font-bold text-blue-600">{insight.confidence}%</span>
-                            <div className="ml-3 w-20 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full" 
-                                style={{ width: `${insight.confidence}%` }}
-                              ></div>
+                            <div className="ml-3 w-20">
+                              <ProgressBar 
+                                value={insight.confidence} 
+                                max={100}
+                                label={`Niveau de confiance: ${insight.confidence}%`}
+                                className="h-2"
+                              />
                             </div>
                           </div>
                         </div>

@@ -4,36 +4,76 @@ import {
   Plus, 
   Search, 
   Filter,
-  Calendar,
   Users,
   TrendingUp,
-  Award,
-  Clock,
   DollarSign,
   FileText,
-  Settings,
   Eye,
   Edit,
   Download,
-  Upload,
   BarChart3,
-  Target,
   Star,
-  Briefcase,
   GraduationCap,
   Phone,
-  Mail,
-  MapPin,
-  CheckCircle
+  Mail
 } from 'lucide-react';
 import { 
   TeacherModal, 
   EvaluationModal, 
-  TrainingModal, 
-  ContractModal, 
-  ConfirmModal, 
-  AlertModal 
+  TrainingModal,
+  ContractModal,
+  ConfirmModal,
+  AlertModal
 } from '../modals';
+
+// Import the TeacherData interface from TeacherModal to ensure type compatibility
+import { TeacherData } from '../modals/TeacherModal';
+
+interface TeacherItem extends Omit<TeacherData, 'departmentId'> {
+  id: string;
+  department: string; // Instead of departmentId in TeacherData
+}
+
+interface TrainingItem {
+  id: string;
+  title: string;
+  provider: string;
+  startDate: string;
+  endDate: string;
+  participants: number;
+  status: string;
+}
+
+interface ContractItem {
+  id: string;
+  type: string;
+  teacherId: string;
+  teacherName: string;
+  startDate: string;
+  endDate: string | null;
+  position: string;
+}
+
+interface EvaluationItem {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  evaluator: string;
+  date: string;
+  score: number;
+  comments: string;
+}
+
+// Alert message type used for state typing in the component
+// Used directly in the alertMessage state variable below
+type AlertMessageType = {
+  title: string;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+};
+
+// Union type for HR items
+type HRItem = TeacherItem | TrainingItem | ContractItem | EvaluationItem;
 
 const HR: React.FC = () => {
   const [activeTab, setActiveTab] = useState('personnel');
@@ -46,9 +86,24 @@ const HR: React.FC = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<HRItem | null>(null);
+  
+  // Helper function to convert TeacherItem to TeacherData (if it's a teacher)
+  const getSelectedTeacherData = (): Partial<TeacherData> | undefined => {
+    if (!selectedItem) return undefined;
+    
+    // Check if selectedItem is a TeacherItem by checking for properties unique to teachers
+    if ('firstName' in selectedItem && 'lastName' in selectedItem) {
+      const { department, ...rest } = selectedItem as TeacherItem;
+      return {
+        ...rest,
+        departmentId: department // Map department to departmentId for compatibility
+      };
+    }
+    return undefined;
+  };
   const [isEditMode, setIsEditMode] = useState(false);
-  const [alertMessage, setAlertMessage] = useState({ title: '', message: '', type: 'success' as 'success' | 'error' | 'info' | 'warning' });
+  const [alertMessage, setAlertMessage] = useState<AlertMessageType>({ title: '', message: '', type: 'success' });
 
   const hrStats = [
     {
@@ -241,18 +296,6 @@ const HR: React.FC = () => {
     }
   ];
 
-  const payroll = [
-    {
-      month: 'Janvier 2024',
-      totalGross: 156780,
-      totalNet: 121450,
-      socialCharges: 47034,
-      taxes: 23560,
-      bonuses: 4500,
-      employees: 65
-    }
-  ];
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -289,9 +332,45 @@ const HR: React.FC = () => {
     setIsTeacherModalOpen(true);
   };
 
-  const handleEditTeacher = (teacher: any) => {
+  // Type for the personnel array items which have a specific shape but not all TeacherItem properties
+  interface PersonnelItem {
+    id: string;
+    firstName: string;
+    lastName: string;
+    position: string;
+    department: string;
+    hireDate: string;
+    contract: string;
+    salary: number;
+    phone: string;
+    email: string;
+    address: string;
+    status: string;
+    performance: number;
+    lastEvaluation: string;
+    // Optional fields that might not exist in some PersonnelItems but are needed for TeacherItem
+    gender?: string;
+    dateOfBirth?: string;
+    subjects?: string[];
+    qualification?: string;
+    specialization?: string;
+    notes?: string;
+  }
+
+  const handleEditTeacher = (person: PersonnelItem) => {
     setIsEditMode(true);
-    setSelectedItem(teacher);
+    // Add missing required properties to match TeacherItem interface
+    const teacherData: TeacherItem = {
+      ...person,
+      gender: person.gender || '',
+      dateOfBirth: person.dateOfBirth || '',
+      subjects: person.subjects || [],
+      qualification: person.qualification || '',
+      specialization: person.specialization || '',
+      notes: person.notes || '',
+      address: person.address || ''
+    };
+    setSelectedItem(teacherData);
     setIsTeacherModalOpen(true);
   };
 
@@ -313,12 +392,7 @@ const HR: React.FC = () => {
     setIsContractModalOpen(true);
   };
 
-  const handleDeleteItem = (item: any, type: string) => {
-    setSelectedItem(item);
-    setIsConfirmModalOpen(true);
-  };
-
-  const handleSaveTeacher = (teacherData: any) => {
+  const handleSaveTeacher = (teacherData: TeacherData) => {
     console.log('Saving teacher:', teacherData);
     setAlertMessage({
       title: isEditMode ? 'Personnel mis à jour' : 'Personnel ajouté',
@@ -330,19 +404,19 @@ const HR: React.FC = () => {
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveEvaluation = (evaluationData: any) => {
+  const handleSaveEvaluation = (evaluationData: EvaluationItem) => {
     console.log('Saving evaluation:', evaluationData);
     setAlertMessage({
       title: isEditMode ? 'Évaluation mise à jour' : 'Évaluation ajoutée',
       message: isEditMode 
-        ? `L'évaluation de ${evaluationData.employeeName} a été mise à jour avec succès.`
-        : `L'évaluation de ${evaluationData.employeeName} a été ajoutée avec succès.`,
+        ? `L'évaluation de ${evaluationData.teacherName} a été mise à jour avec succès.`
+        : `L'évaluation de ${evaluationData.teacherName} a été ajoutée avec succès.`,
       type: 'success'
     });
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveTraining = (trainingData: any) => {
+  const handleSaveTraining = (trainingData: TrainingItem) => {
     console.log('Saving training:', trainingData);
     setAlertMessage({
       title: isEditMode ? 'Formation mise à jour' : 'Formation ajoutée',
@@ -354,13 +428,13 @@ const HR: React.FC = () => {
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveContract = (contractData: any) => {
+  const handleSaveContract = (contractData: ContractItem) => {
     console.log('Saving contract:', contractData);
     setAlertMessage({
       title: isEditMode ? 'Contrat mis à jour' : 'Contrat ajouté',
       message: isEditMode 
-        ? `Le contrat de ${contractData.employeeName} a été mis à jour avec succès.`
-        : `Le contrat de ${contractData.employeeName} a été ajouté avec succès.`,
+        ? `Le contrat de ${contractData.teacherName} a été mis à jour avec succès.`
+        : `Le contrat de ${contractData.teacherName} a été ajouté avec succès.`,
       type: 'success'
     });
     setIsAlertModalOpen(true);
@@ -386,15 +460,21 @@ const HR: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400">Gestion complète du personnel et développement RH</p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-3">
-          <button className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-            <Download className="w-4 h-4 mr-2" />
+          <button 
+            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            aria-label="Télécharger le rapport RH"
+            title="Télécharger le rapport RH"
+          >
+            <Download className="w-4 h-4 mr-2" aria-hidden="true" />
             Rapport RH
           </button>
           <button 
             onClick={handleNewTeacher}
             className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
+            aria-label="Ajouter un nouveau membre du personnel"
+            title="Ajouter un nouveau membre du personnel"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
             Nouveau personnel
           </button>
         </div>
@@ -531,16 +611,20 @@ const HR: React.FC = () => {
                       </div>
                       
                       <div className="flex space-x-2">
-                        <button className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-lg">
+                        <button 
+                          aria-label="Voir les détails" 
+                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-lg">
                           <Eye className="w-4 h-4" />
                         </button>
                         <button 
+                          aria-label="Modifier le personnel"
                           onClick={() => handleEditTeacher(person)}
                           className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button 
+                          aria-label="Ajouter une évaluation"
                           onClick={() => handleNewEvaluation()}
                           className="p-2 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-lg"
                         >
@@ -682,10 +766,18 @@ const HR: React.FC = () => {
                       </div>
                       
                       <div className="flex space-x-2">
-                        <button className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50">
+                        <button 
+                          className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50"
+                          aria-label="Voir les détails de la formation"
+                          title="Voir les détails"
+                        >
                           Détails
                         </button>
-                        <button className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50">
+                        <button 
+                          className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50"
+                          aria-label="Voir les participants à la formation"
+                          title="Voir les participants"
+                        >
                           Participants
                         </button>
                       </div>
@@ -721,8 +813,10 @@ const HR: React.FC = () => {
                 <button 
                   onClick={handleNewEvaluation}
                   className="inline-flex items-center px-4 py-2 bg-orange-600 dark:bg-orange-700 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-800"
+                  aria-label="Créer une nouvelle évaluation"
+                  title="Créer une nouvelle évaluation"
                 >
-                  <Star className="w-4 h-4 mr-2" />
+                  <Star className="w-4 h-4 mr-2" aria-hidden="true" />
                   Nouvelle évaluation
                 </button>
               </div>
@@ -1012,7 +1106,7 @@ const HR: React.FC = () => {
         isOpen={isTeacherModalOpen}
         onClose={() => setIsTeacherModalOpen(false)}
         onSave={handleSaveTeacher}
-        teacherData={selectedItem}
+        teacherData={getSelectedTeacherData()}
         isEdit={isEditMode}
       />
 
@@ -1063,4 +1157,6 @@ const HR: React.FC = () => {
   );
 };
 
+// NOTE: Fast refresh warning occurs because this file contains both interfaces and a component
+// In a future refactoring, these interfaces should be moved to a separate types file
 export default HR;

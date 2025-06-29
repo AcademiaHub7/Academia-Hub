@@ -329,17 +329,22 @@ const Library: React.FC = () => {
                     />
                   </div>
                   
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="all">Toutes catégories</option>
-                    <option value="Littérature française">Littérature française</option>
-                    <option value="Manuels scolaires">Manuels scolaires</option>
-                    <option value="Histoire">Histoire</option>
-                    <option value="Sciences">Sciences</option>
-                  </select>
+                  <div className="relative">
+                    <label htmlFor="category-select" className="sr-only">Sélectionner une catégorie</label>
+                    <select
+                      id="category-select"
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      aria-label="Sélectionner une catégorie"
+                    >
+                      <option value="all">Toutes catégories</option>
+                      <option value="Littérature française">Littérature française</option>
+                      <option value="Manuels scolaires">Manuels scolaires</option>
+                      <option value="Histoire">Histoire</option>
+                      <option value="Sciences">Sciences</option>
+                    </select>
+                  </div>
                 </div>
                 
                 <div className="flex items-center space-x-2">
@@ -396,20 +401,38 @@ const Library: React.FC = () => {
                           {book.available}/{book.copies} exemplaires
                         </p>
                         <div className="flex space-x-2 mt-3">
-                          <button className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-lg">
-                            <Eye className="w-4 h-4" />
+                          <button 
+                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                            aria-label={`Voir les détails de ${book.title}`}
+                            title="Voir les détails"
+                          >
+                            <Eye className="w-4 h-4" aria-hidden="true" />
+                            <span className="sr-only">Voir les détails</span>
                           </button>
                           <button 
-                            onClick={() => handleEditBook(book)}
-                            className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                            aria-label={`Modifier ${book.title}`}
+                            title="Modifier"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-4 h-4" aria-hidden="true" />
+                            <span className="sr-only">Modifier</span>
+                          </button>
+                          <button 
+                            className="p-2 text-green-600 hover:bg-green-100 rounded-lg"
+                            aria-label={`Réserver ${book.title}`}
+                            title="Réserver"
+                          >
+                            <Bookmark className="w-4 h-4" aria-hidden="true" />
+                            <span className="sr-only">Réserver</span>
                           </button>
                           <button 
                             onClick={() => handleDeleteBook(book)}
                             className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg"
+                            aria-label={`Supprimer ${book.title}`}
+                            title="Supprimer"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" aria-hidden="true" />
+                            <span className="sr-only">Supprimer</span>
                           </button>
                         </div>
                       </div>
@@ -420,7 +443,7 @@ const Library: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'loans' && (
+          {activeTab === 'loans' ? (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Gestion des prêts</h3>

@@ -4,7 +4,9 @@ export { default as FormModal } from './FormModal';
 export { default as BookModal } from './BookModal';
 export { default as LoanModal } from './LoanModal';
 export { default as MessageModal } from './MessageModal';
+// Re-export EquipmentModal and Equipment type
 export { default as EquipmentModal } from './EquipmentModal';
+export type { Equipment } from './EquipmentModal';
 export { default as MenuModal } from './MenuModal';
 export { default as MedicalRecordModal } from './MedicalRecordModal';
 export { default as VehicleModal } from './VehicleModal';

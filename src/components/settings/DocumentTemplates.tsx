@@ -16,15 +16,73 @@ import {
 } from 'lucide-react';
 import { DocumentTemplateModal, ConfirmModal, AlertModal } from '../modals';
 
+// Import types from DocumentTemplateModal if they were exported
+// Since they aren't exported, we'll recreate the necessary types here
+
+// Match the TemplateData interface from DocumentTemplateModal
+interface TemplateZone {
+  id: string;
+  name: string;
+  type: string;
+  content: string;
+  position: string;
+}
+
+interface TemplateVariable {
+  name: string;
+  description: string;
+  type: 'text' | 'number' | 'date' | 'image' | 'html';
+  source: 'school' | 'document' | 'user' | 'student' | 'system';
+}
+
+// Type matching what the DocumentTemplateModal expects as input
+type ModalTemplateData = {
+  name: string;
+  description: string;
+  documentType: string;
+  htmlTemplate: string;
+  cssStyles: string;
+  zones: TemplateZone[];
+  variables: TemplateVariable[];
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+// Our document template extended with additional fields for display
+interface DocumentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  type: string; // This maps to documentType in TemplateData
+  category: string;
+  lastModified: string;
+  isDefault: boolean;
+  isActive: boolean;
+  createdBy: string;
+  // Optional fields that might be needed for the modal
+  htmlTemplate?: string;
+  cssStyles?: string;
+  zones?: TemplateZone[];
+  variables?: TemplateVariable[];
+}
+
+type AlertType = 'success' | 'error' | 'info' | 'warning';
+
+interface AlertMessage {
+  title: string;
+  message: string;
+  type: AlertType;
+}
+
 const DocumentTemplates: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [alertMessage, setAlertMessage] = useState({ title: '', message: '', type: 'success' as 'success' | 'error' | 'info' | 'warning' });
+  const [alertMessage, setAlertMessage] = useState<AlertMessage>({ title: '', message: '', type: 'success' });
 
   // Données fictives pour les templates
   const templates = [
@@ -114,24 +172,21 @@ const DocumentTemplates: React.FC = () => {
     setIsTemplateModalOpen(true);
   };
 
-  const handleEditTemplate = (template: any) => {
+  const handleEditTemplate = (template: DocumentTemplate) => {
     setIsEditMode(true);
     setSelectedTemplate(template);
     setIsTemplateModalOpen(true);
   };
 
-  const handleDeleteTemplate = (template: any) => {
+  const handleDeleteTemplate = (template: DocumentTemplate) => {
     setSelectedTemplate(template);
     setIsConfirmModalOpen(true);
   };
 
-  const handleDuplicateTemplate = (template: any) => {
-    const duplicatedTemplate = {
-      ...template,
-      id: `TPL-${Math.floor(Math.random() * 1000)}`,
-      name: `${template.name} (copie)`,
-      isDefault: false
-    };
+  const handleDuplicateTemplate = (template: DocumentTemplate) => {
+    // Create a duplicate template with a new ID and modified name
+    // In a real application, we would save this template here
+    // For demonstration purposes, we'll just show an alert message
     
     setAlertMessage({
       title: 'Template dupliqué',
@@ -141,15 +196,17 @@ const DocumentTemplates: React.FC = () => {
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveTemplate = (templateData: any) => {
-    console.log('Saving template:', templateData);
+  const handleSaveTemplate = (templateData: DocumentTemplate) => {
+    setIsTemplateModalOpen(false);
+    
     setAlertMessage({
-      title: isEditMode ? 'Template mis à jour' : 'Template créé',
+      title: isEditMode ? 'Template modifié' : 'Template créé',
       message: isEditMode 
-        ? `Le template "${templateData.name}" a été mis à jour avec succès.`
-        : `Le template "${templateData.name}" a été créé avec succès.`,
+        ? `Le template "${templateData.name}" a été modifié avec succès.`
+        : `Le nouveau template "${templateData.name}" a été créé avec succès.`,
       type: 'success'
     });
+    
     setIsAlertModalOpen(true);
   };
 
@@ -204,6 +261,7 @@ const DocumentTemplates: React.FC = () => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
+            aria-label="Filtrer par catégorie"
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
             {categories.map(category => (
@@ -358,8 +416,36 @@ const DocumentTemplates: React.FC = () => {
       <DocumentTemplateModal
         isOpen={isTemplateModalOpen}
         onClose={() => setIsTemplateModalOpen(false)}
-        onSave={handleSaveTemplate}
-        templateData={selectedTemplate}
+        onSave={(data: ModalTemplateData) => {
+          // Convert TemplateData to DocumentTemplate if needed
+          const templateData: DocumentTemplate = {
+            id: selectedTemplate?.id || `TPL-${Math.floor(Math.random() * 1000)}`,
+            name: data.name,
+            description: data.description,
+            type: data.documentType, // Map documentType to type
+            category: selectedTemplate?.category || 'default',
+            lastModified: new Date().toISOString().split('T')[0],
+            isDefault: data.isDefault,
+            isActive: data.isActive,
+            createdBy: selectedTemplate?.createdBy || 'Admin',
+            htmlTemplate: data.htmlTemplate,
+            cssStyles: data.cssStyles,
+            zones: data.zones,
+            variables: data.variables
+          };
+          handleSaveTemplate(templateData);
+        }}
+        templateData={selectedTemplate ? {
+          name: selectedTemplate.name,
+          description: selectedTemplate.description,
+          documentType: selectedTemplate.type,
+          htmlTemplate: selectedTemplate.htmlTemplate || '',
+          cssStyles: selectedTemplate.cssStyles || '',
+          zones: selectedTemplate.zones || [],
+          variables: selectedTemplate.variables || [],
+          isDefault: selectedTemplate.isDefault,
+          isActive: selectedTemplate.isActive
+        } : undefined}
         isEdit={isEditMode}
       />
 

@@ -1,10 +1,41 @@
 import React, { useState } from 'react';
+
+import ProgressBarDynamic from '../ui/ProgressBarDynamic';
+
+interface ProgressBarProps extends React.HTMLAttributes<HTMLDivElement> {
+  value: number;
+  max: number;
+  label: string;
+  color?: 'blue' | 'green' | 'red' | 'purple' | 'amber' | 'cyan';
+}
+
+const ProgressBar: React.FC<ProgressBarProps> = ({ 
+  value, 
+  max, 
+  label, 
+  color = 'blue',
+  className = '' 
+}) => {
+  // Calculate percentage
+  const percentage = (value / max) * 100;
+  const roundedPercentage = Math.round(percentage / 10) * 10; // Round to nearest 10
+  const safeValue = Math.min(100, Math.max(0, roundedPercentage)); // Clamp between 0-100
+  
+  return (
+    <ProgressBarDynamic
+      value={safeValue}
+      color={color}
+      aria-label={`${label}: ${Math.round(percentage)}%`}
+      className={`mt-1 ${className}`}
+    />
+  );
+};
+import './Examinations.css';
 import { 
   BookOpen, 
   Plus, 
   Search, 
   Filter, 
-  Download,
   Edit,
   Eye,
   FileText,
@@ -18,7 +49,6 @@ import {
 } from 'lucide-react';
 import { GradeModal, ReportCardModal, AlertModal, ConfirmModal } from '../modals';
 import { EvaluationSettingsModal } from '../modals';
-import { getGradeAppreciation } from '../../utils/gradeCalculations';
 
 const Examinations: React.FC = () => {
   const [activeTab, setActiveTab] = useState('grades');
@@ -27,8 +57,28 @@ const Examinations: React.FC = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [selectedEvaluation, setSelectedEvaluation] = useState<any>(null);
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  interface Evaluation {
+    id: number | string;
+    name?: string; // Added as optional for backward compatibility
+    subject: string;
+    class: string;
+    examType: string;
+    date: string;
+    teacher: string;
+    gradesEntered: number;
+    totalStudents: number;
+    average: number;
+    status: string;
+  }
+
+  interface Student {
+    id: string;
+    name: string;
+    className: string; // Changed from 'class' to 'className' to avoid reserved keyword
+  }
+
+  const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const examStats = [
@@ -180,14 +230,46 @@ const Examinations: React.FC = () => {
     setIsGradeModalOpen(true);
   };
 
-  const handleEditGrade = (evaluation: any) => {
+  interface GradeData {
+    studentId: string;
+    grade: number;
+    comments: string;
+  }
+
+  interface EvaluationSettings {
+    passingGrade: number;
+    maxGrade: number;
+    gradeScale: '20' | '100';
+  }
+
+  const handleEditGrade = (evaluation: Evaluation) => {
     setIsEditMode(true);
-    setSelectedEvaluation(evaluation);
+    // Convert to full Evaluation type with defaults
+    const fullEvaluation: Evaluation = {
+      id: evaluation.id.toString(),
+      name: 'name' in evaluation ? evaluation.name : 'Nouvelle évaluation',
+      class: evaluation.class || '',
+      subject: evaluation.subject || '',
+      examType: evaluation.examType || '',
+      date: evaluation.date || new Date().toISOString().split('T')[0],
+      teacher: evaluation.teacher || '',
+      gradesEntered: evaluation.gradesEntered || 0,
+      totalStudents: evaluation.totalStudents || 0,
+      average: evaluation.average || 0,
+      status: evaluation.status || 'in-progress'
+    };
+    setSelectedEvaluation(fullEvaluation);
     setIsGradeModalOpen(true);
   };
 
-  const handleViewReportCard = (student: any) => {
-    setSelectedStudent(student);
+  const handleViewReportCard = (student: Omit<Student, 'id'> & { id?: string; className?: string; class?: string }) => {
+    // Create a student object with a temporary ID if not provided
+    const studentWithId: Student = {
+      id: student.id || `temp-${Date.now()}`,
+      name: student.name,
+      className: student.className || student.class || ''
+    };
+    setSelectedStudent(studentWithId);
     setIsReportCardModalOpen(true);
   };
 
@@ -195,12 +277,12 @@ const Examinations: React.FC = () => {
     setIsSettingsModalOpen(true);
   };
 
-  const handleSaveGrade = (data: any) => {
+  const handleSaveGrade = (data: GradeData) => {
     console.log('Saving grade data:', data);
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveSettings = (settings: any) => {
+  const handleSaveSettings = (settings: EvaluationSettings) => {
     console.log('Saving settings:', settings);
     setIsAlertModalOpen(true);
   };
@@ -344,12 +426,12 @@ const Examinations: React.FC = () => {
                           <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                             {grade.gradesEntered}/{grade.totalStudents}
                           </p>
-                          <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${(grade.gradesEntered / grade.totalStudents) * 100}%` }}
-                            ></div>
-                          </div>
+                          <ProgressBar 
+                            value={grade.gradesEntered}
+                            max={grade.totalStudents}
+                            label={`Progression: ${grade.gradesEntered} sur ${grade.totalStudents} élèves`}
+                            color={grade.status === 'completed' ? 'green' : 'blue'}
+                          />
                         </div>
                         
                         <div className="text-center">
@@ -367,16 +449,24 @@ const Examinations: React.FC = () => {
                         
                         <div className="flex space-x-2">
                           <button 
-                            onClick={() => handleViewReportCard({ name: 'Marie Dubois', class: grade.class })}
-                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-lg"
+                            onClick={() => handleViewReportCard({ 
+                              id: 'temp-marie-dubois',
+                              name: 'Marie Dubois', 
+                              className: grade.class 
+                            })}
+                            className="action-button view"
+                            title="Voir le bulletin"
+                            aria-label="Voir le bulletin de notes"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-4 h-4" aria-hidden="true" />
                           </button>
                           <button 
                             onClick={() => handleEditGrade(grade)}
-                            className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                            className="action-button edit"
+                            title="Modifier les notes"
+                            aria-label="Modifier les notes"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-4 h-4" aria-hidden="true" />
                           </button>
                         </div>
                       </div>

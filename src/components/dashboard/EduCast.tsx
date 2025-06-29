@@ -1,59 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import './EduCast.css';
 import { 
   Video, 
   Plus, 
   Search, 
-  Filter,
-  Calendar,
-  Users,
-  Play,
-  Pause,
-  Settings,
-  Edit,
-  Eye,
-  Download,
-  Trash2,
-  BarChart3,
-  TrendingUp,
-  Brain,
-  BookOpen,
+  Filter, 
+  Star, 
+  Eye, 
+  Edit, 
+  Trash2, 
+  CheckCircle, 
+  Play, 
+  Pause, 
+  Volume2 as Volume,
   MessageSquare,
+  Send as SendIcon,
+  BookOpen,
   Sparkles,
   Upload,
   Clock,
-  CheckCircle,
-  Star,
-  Bookmark,
-  PenTool,
-  Layers,
-  HelpCircle,
-  Share2,
-  FileText,
   Zap,
-  Award,
-  Mic,
-  User,
-  Lightbulb
+  Brain,
+  HelpCircle,
+  Layers,
+  Lightbulb,
+  PenTool,
+  BarChart3,
+  TrendingUp,
+  Calendar,
+  Download,
+  Bookmark,
+  Share2,
+  FileText
 } from 'lucide-react';
 import ReactPlayer from 'react-player/lazy';
 import { useDropzone } from 'react-dropzone';
 
 const EduCast: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [isCreatingCourse, setIsCreatingCourse] = useState(false);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [selectedAvatar, setSelectedAvatar] = useState('avatar1');
-  const [selectedVoice, setSelectedVoice] = useState('female1');
-  const [courseScript, setCourseScript] = useState('');
-  const [courseTitle, setCourseTitle] = useState('');
-  const [courseSubject, setCourseSubject] = useState('');
-  const [courseLevel, setCourseLevel] = useState('');
-  const [courseInteractions, setCourseInteractions] = useState<any[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isCreatingCourse, setIsCreatingCourse] = useState<boolean>(false);
+  const [isPreviewMode, setIsPreviewMode] = useState<boolean>(false);
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [selectedAvatar, setSelectedAvatar] = useState<string>('avatar1');
+  const [selectedVoice, setSelectedVoice] = useState<string>('female1');
+  const [courseScript, setCourseScript] = useState<string>('');
+  const [courseTitle, setCourseTitle] = useState<string>('');
+  const [courseSubject, setCourseSubject] = useState<string>('');
+  const [courseLevel, setCourseLevel] = useState<string>('');
+  
+  type InteractionType = 'quiz' | 'poll' | 'discussion';
+  
+  interface BaseInteraction {
+    id: string;
+    type: InteractionType;
+    time: number;
+  }
+  
+  interface QuizInteraction extends BaseInteraction {
+    type: 'quiz';
+    content: {
+      question: string;
+      options: string[];
+      correctAnswer: number;
+    };
+  }
+  
+  interface PollInteraction extends BaseInteraction {
+    type: 'poll';
+    content: {
+      question: string;
+      options: string[];
+    };
+  }
+  
+  interface DiscussionInteraction extends BaseInteraction {
+    type: 'discussion';
+    content: {
+      text: string;
+    };
+  }
+  
+  type CourseInteraction = QuizInteraction | PollInteraction | DiscussionInteraction;
+  
+  const [courseInteractions, setCourseInteractions] = useState<CourseInteraction[]>([]);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generationProgress, setGenerationProgress] = useState(0);
+  const generationProgressRef = useRef<HTMLDivElement>(null);
+  
+  // Update generation progress bar width when progress changes
+  useEffect(() => {
+    if (generationProgressRef.current) {
+      generationProgressRef.current.style.setProperty('--progress-width', `${generationProgress}%`);
+    }
+  }, [generationProgress]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showSubtitles, setShowSubtitles] = useState(true);
@@ -62,6 +103,24 @@ const EduCast: React.FC = () => {
   const [showChatbot, setShowChatbot] = useState(false);
   const [chatMessages, setChatMessages] = useState<{role: string, content: string}[]>([]);
   const [messageInput, setMessageInput] = useState('');
+  const videoProgressRef = useRef<HTMLDivElement>(null);
+  
+  // Update video progress bar width when time changes
+  useEffect(() => {
+    if (videoProgressRef.current) {
+      const progress = (currentVideoTime / 100) * 100; // Assuming 100s video duration
+      videoProgressRef.current.style.setProperty('--progress-width', `${progress}%`);
+    }
+  }, [currentVideoTime]);
+  const progressRef = useRef<HTMLDivElement>(null);
+  
+  // Update progress bar width when step changes
+  useEffect(() => {
+    if (progressRef.current) {
+      const progress = ((currentStep - 1) / 3) * 100;
+      progressRef.current.style.setProperty('--progress-width', `${progress}%`);
+    }
+  }, [currentStep]);
 
   // Données fictives pour les statistiques
   const educastStats = [
@@ -248,24 +307,51 @@ const EduCast: React.FC = () => {
   });
 
   // Fonction pour ajouter une interaction au cours
-  const addInteraction = (type: string) => {
-    const newInteraction = {
-      id: `interaction-${Date.now()}`,
-      type,
-      time: currentVideoTime,
-      content: type === 'quiz' ? {
-        question: 'Question du quiz',
-        options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
-        correctAnswer: 0
-      } : type === 'poll' ? {
-        question: 'Question du sondage',
-        options: ['Option 1', 'Option 2', 'Option 3']
-      } : {
-        text: 'Contenu de l\'interaction'
-      }
-    };
+  const addInteraction = (type: InteractionType) => {
+    let newInteraction: CourseInteraction;
     
-    setCourseInteractions([...courseInteractions, newInteraction]);
+    switch (type) {
+      case 'quiz':
+        newInteraction = {
+          id: `interaction-${Date.now()}`,
+          type: 'quiz',
+          time: currentVideoTime,
+          content: {
+            question: 'Question du quiz',
+            options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
+            correctAnswer: 0
+          }
+        };
+        break;
+        
+      case 'poll':
+        newInteraction = {
+          id: `interaction-${Date.now()}`,
+          type: 'poll',
+          time: currentVideoTime,
+          content: {
+            question: 'Question du sondage',
+            options: ['Option 1', 'Option 2', 'Option 3']
+          }
+        };
+        break;
+        
+      case 'discussion':
+        newInteraction = {
+          id: `interaction-${Date.now()}`,
+          type: 'discussion',
+          time: currentVideoTime,
+          content: {
+            text: 'Contenu de l\'interaction'
+          }
+        };
+        break;
+        
+      default:
+        return; // Should never happen with proper typing
+    }
+    
+    setCourseInteractions(prev => [...prev, newInteraction]);
   };
 
   // Fonction pour simuler la génération d'un cours
@@ -342,7 +428,7 @@ const EduCast: React.FC = () => {
           {educastStats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div key={index} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+              <div key={index} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.title}</p>
@@ -531,9 +617,12 @@ const EduCast: React.FC = () => {
                       />
                     </div>
                     <select
+                      id="category-filter"
                       value={selectedCategory}
                       onChange={(e) => setSelectedCategory(e.target.value)}
                       className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      aria-label="Filtrer par matière"
+                      title="Sélectionner une matière"
                     >
                       <option value="all">Toutes les matières</option>
                       {subjects.map((subject, index) => (
@@ -580,14 +669,24 @@ const EduCast: React.FC = () => {
                               <button 
                                 onClick={() => setIsPreviewMode(true)}
                                 className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-lg"
+                                aria-label="Aperçu du cours"
+                                title="Aperçu"
                               >
-                                <Eye className="w-4 h-4" />
+                                <Eye className="w-4 h-4" aria-hidden="true" />
                               </button>
-                              <button className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                                <Edit className="w-4 h-4" />
+                              <button 
+                                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                                aria-label="Modifier le cours"
+                                title="Modifier"
+                              >
+                                <Edit className="w-4 h-4" aria-hidden="true" />
                               </button>
-                              <button className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg">
-                                <Trash2 className="w-4 h-4" />
+                              <button 
+                                className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg"
+                                aria-label="Supprimer le cours"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4" aria-hidden="true" />
                               </button>
                             </div>
                           </div>
@@ -734,13 +833,13 @@ const EduCast: React.FC = () => {
                           </div>
                           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                             <div 
-                              className={`h-2 rounded-full ${
+                              className={`h-2 rounded-full progress-bar-fill ${
                                 index % 4 === 0 ? 'bg-blue-600' :
                                 index % 4 === 1 ? 'bg-green-600' :
                                 index % 4 === 2 ? 'bg-purple-600' :
                                 'bg-orange-600'
                               }`}
-                              style={{ width: `${subject.percentage}%` }}
+                              data-percentage={subject.percentage}
                             ></div>
                           </div>
                         </div>
@@ -754,8 +853,8 @@ const EduCast: React.FC = () => {
                       {usageStats.weeklyTrend.map((day, index) => (
                         <div key={index} className="flex flex-col items-center">
                           <div 
-                            className="w-8 bg-blue-600 dark:bg-blue-500 rounded-t"
-                            style={{ height: `${(day.views / 600) * 100}%` }}
+                            className="w-8 bg-blue-600 dark:bg-blue-500 rounded-t bar-chart-bar"
+                            data-bar-height={`${(day.views / 600) * 100}%`}
                           ></div>
                           <span className="text-xs text-gray-600 dark:text-gray-400 mt-1">{day.day}</span>
                         </div>
@@ -816,8 +915,8 @@ const EduCast: React.FC = () => {
                               <div className="flex items-center">
                                 <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2">
                                   <div 
-                                    className="bg-green-600 h-2 rounded-full" 
-                                    style={{ width: `${Math.floor(Math.random() * 30) + 70}%` }}
+                                    className="bg-green-600 h-2 rounded-full random-width"
+                                    data-random-width={Math.floor(Math.random() * 30) + 70}
                                   ></div>
                                 </div>
                                 <span className="text-sm text-gray-900 dark:text-gray-100">
@@ -935,16 +1034,18 @@ const EduCast: React.FC = () => {
                       <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Moments d'attention</h5>
                       <div className="h-40 bg-gray-100 dark:bg-gray-900/50 rounded-lg flex items-end p-2">
                         {/* Simuler un graphique d'attention */}
-                        {Array.from({ length: 20 }).map((_, index) => (
-                          <div 
-                            key={index} 
-                            className="w-full bg-blue-600 dark:bg-blue-500 rounded-t mx-0.5"
-                            style={{ 
-                              height: `${Math.sin(index / 3) * 50 + 50}%`,
-                              opacity: index % 5 === 0 ? 1 : 0.7
-                            }}
-                          ></div>
-                        ))}
+                        {Array.from({ length: 20 }).map((_, index) => {
+                          const height = Math.sin(index / 3) * 50 + 50;
+                          return (
+                            <div 
+                              key={index} 
+                              className={`w-full bg-blue-600 dark:bg-blue-500 rounded-t mx-0.5 attention-bar ${
+                                index % 5 === 0 ? 'highlighted' : ''
+                              }`}
+                              data-height={height}
+                            ></div>
+                          );
+                        })}
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                         L'attention est maximale dans les 5 premières minutes et après chaque interaction.
@@ -1026,11 +1127,13 @@ const EduCast: React.FC = () => {
               ))}
             </div>
             <div className="relative mt-2">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-700"></div>
-              <div 
-                className="absolute top-0 left-0 h-1 bg-blue-600" 
-                style={{ width: `${((currentStep - 1) / 3) * 100}%` }}
-              ></div>
+              <div className="progress-container">
+                <div 
+                  ref={progressRef}
+                  className="progress-indicator"
+                  data-progress={((currentStep - 1) / 3) * 100}
+                ></div>
+              </div>
             </div>
           </div>
 
@@ -1150,8 +1253,12 @@ const EduCast: React.FC = () => {
                             </p>
                           </div>
                           <div className="flex items-center">
-                            <button className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-full">
-                              <Play className="w-4 h-4" />
+                            <button 
+                              className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-full voice-preview-button"
+                              aria-label={`Prévisualiser la voix ${voice.name}`}
+                              title={`Écouter un exemple de la voix ${voice.name}`}
+                            >
+                              <Play className="w-4 h-4" aria-hidden="true" />
                             </button>
                             {selectedVoice === voice.id && (
                               <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 ml-2" />
@@ -1329,15 +1436,25 @@ const EduCast: React.FC = () => {
                     <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Prévisualisation</h4>
                     <div className="aspect-video bg-gray-100 dark:bg-gray-900 rounded-lg flex items-center justify-center mb-3">
                       <div className="text-center">
-                        <Play className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-2" />
+                        <button 
+                          className="p-2 text-gray-400 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                          aria-label="Lire la vidéo"
+                          title="Lire la vidéo"
+                        >
+                          <Play className="w-12 h-12" aria-hidden="true" />
+                        </button>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Prévisualisation non disponible</p>
                         <p className="text-xs text-gray-400 dark:text-gray-500">La vidéo sera générée à l'étape suivante</p>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <button className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
-                          <Play className="w-4 h-4" />
+                        <button 
+                          className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full media-control"
+                          aria-label="Lire la prévisualisation"
+                          title="Lire"
+                        >
+                          <Play className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <div className="w-48 bg-gray-200 dark:bg-gray-700 rounded-full h-1">
                           <div className="bg-blue-600 h-1 rounded-full w-0"></div>
@@ -1345,8 +1462,12 @@ const EduCast: React.FC = () => {
                         <span className="text-xs text-gray-500 dark:text-gray-400">00:00</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <button className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
-                          <Settings className="w-4 h-4" />
+                        <button 
+                          className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full media-control"
+                          aria-label="Ajuster le volume"
+                          title="Volume"
+                        >
+                          <Volume className="w-4 h-4" aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -1358,32 +1479,48 @@ const EduCast: React.FC = () => {
                     </label>
                     {courseInteractions.length > 0 ? (
                       <div className="space-y-2">
-                        {courseInteractions.map((interaction, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            <div className="flex items-center">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
-                                interaction.type === 'quiz' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' :
-                                interaction.type === 'poll' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                                'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                              }`}>
-                                {interaction.type === 'quiz' ? '?' :
-                                 interaction.type === 'poll' ? '◯' : '!'}
+                        {courseInteractions.map((interaction) => {
+                          // Convert time to minutes and seconds
+                          const minutes = Math.floor(interaction.time / 60);
+                          const seconds = (interaction.time % 60).toString().padStart(2, '0');
+                          
+                          // Get interaction type display text
+                          const interactionType = interaction.type === 'quiz' ? 'Quiz' :
+                                               interaction.type === 'poll' ? 'Sondage' : 'Point d\'information';
+                          
+                          // Get styling based on interaction type
+                          const interactionStyles = {
+                            'quiz': 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+                            'poll': 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+                            'discussion': 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                          };
+                          
+                          return (
+                            <div key={interaction.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                              <div className="flex items-center">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${interactionStyles[interaction.type]}`}>
+                                  {interaction.type === 'quiz' ? '?' :
+                                   interaction.type === 'poll' ? '◯' : '!'}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    {interactionType}
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    À {minutes}:{seconds}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                  {interaction.type === 'quiz' ? 'Quiz' :
-                                   interaction.type === 'poll' ? 'Sondage' : 'Point d\'information'}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  À {Math.floor(interaction.time / 60)}:{(interaction.time % 60).toString().padStart(2, '0')}
-                                </p>
-                              </div>
+                              <button 
+                                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                                aria-label={`Supprimer ${interactionType}`}
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4" aria-hidden="true" />
+                              </button>
                             </div>
-                            <button className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-center p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
@@ -1425,7 +1562,7 @@ const EduCast: React.FC = () => {
                         className="flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                       >
                         <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mr-4">
-                          <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                          <SendIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div className="flex-1">
                           <h5 className="font-medium text-gray-900 dark:text-gray-100">Sondage</h5>
@@ -1437,7 +1574,7 @@ const EduCast: React.FC = () => {
                       </button>
 
                       <button 
-                        onClick={() => addInteraction('info')}
+                        onClick={() => addInteraction('discussion')}
                         className="flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-purple-300 dark:hover:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
                       >
                         <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mr-4">
@@ -1547,10 +1684,11 @@ const EduCast: React.FC = () => {
                     Génération en cours
                   </h4>
                   <div className="space-y-4">
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
                       <div 
-                        className="bg-blue-600 h-2.5 rounded-full" 
-                        style={{ width: `${generationProgress}%` }}
+                        ref={generationProgressRef}
+                        className="bg-blue-600 h-2.5 rounded-full progress-indicator"
+                        data-progress={generationProgress}
                       ></div>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -1643,14 +1781,17 @@ const EduCast: React.FC = () => {
                     <button 
                       onClick={() => setIsPlaying(!isPlaying)}
                       className="p-2 text-white rounded-full hover:bg-white/20 transition-colors"
+                      aria-label="Lire/Pause"
+                      title="Lire/Pause"
                     >
-                      {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                      {isPlaying ? <Pause className="w-5 h-5" aria-hidden="true" /> : <Play className="w-5 h-5" aria-hidden="true" />}
                     </button>
                     
-                    <div className="w-48 md:w-96 bg-white/30 rounded-full h-1 cursor-pointer">
+                    <div className="w-48 md:w-96 bg-white/30 rounded-full h-1 cursor-pointer overflow-hidden">
                       <div 
-                        className="bg-blue-600 h-1 rounded-full" 
-                        style={{ width: '35%' }}
+                        ref={videoProgressRef}
+                        className="bg-blue-600 h-1 rounded-full progress-indicator"
+                        data-progress="35"
                       ></div>
                     </div>
                     
@@ -1662,6 +1803,8 @@ const EduCast: React.FC = () => {
                       value={playbackSpeed}
                       onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
                       className="bg-transparent text-white text-xs border-none focus:ring-0"
+                      aria-label="Vitesse de lecture"
+                      title="Vitesse de lecture"
                     >
                       <option value="0.5">0.5x</option>
                       <option value="1">1x</option>
@@ -1672,6 +1815,8 @@ const EduCast: React.FC = () => {
                     <button 
                       onClick={() => setShowSubtitles(!showSubtitles)}
                       className={`p-1 rounded-full ${showSubtitles ? 'text-blue-400' : 'text-white'} hover:bg-white/20 transition-colors`}
+                      aria-label="Activer/Désactiver les sous-titres"
+                      title="Activer/Désactiver les sous-titres"
                     >
                       <span className="text-xs font-bold">CC</span>
                     </button>
@@ -1679,6 +1824,8 @@ const EduCast: React.FC = () => {
                     <button 
                       onClick={() => setIsFullscreen(!isFullscreen)}
                       className="p-1 text-white rounded-full hover:bg-white/20 transition-colors"
+                      aria-label="Plein écran"
+                      title="Plein écran"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         {isFullscreen ? (
@@ -1802,8 +1949,10 @@ const EduCast: React.FC = () => {
                           <button 
                             onClick={sendMessage}
                             className="px-3 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700"
+                            aria-label="Envoyer le message"
+                            title="Envoyer"
                           >
-                            <Send className="w-4 h-4" />
+                            <SendIcon className="w-4 h-4" aria-hidden="true" />
                           </button>
                         </div>
                       </div>

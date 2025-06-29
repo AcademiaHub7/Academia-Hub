@@ -1,15 +1,59 @@
 import React, { useState } from 'react';
 import FormModal from './FormModal';
-import { Save, User, Calendar, Phone, Mail, MapPin, GraduationCap, Briefcase } from 'lucide-react';
+import { Save, User, Calendar, GraduationCap, Briefcase } from 'lucide-react';
+
+export interface Department {
+  id: string;
+  name: string;
+}
+
+export interface Subject {
+  id: string;
+  name: string;
+}
+
+export interface TeacherData {
+  matricule?: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
+  dateOfBirth: string;
+  address: string;
+  phone: string;
+  email: string;
+  departmentId: string;
+  subjects: string[];
+  hireDate: string;
+  status: string;
+  qualification: string;
+  qualifications?: string[];
+  specialization: string;
+  notes: string;
+  position?: string;
+  subjectId?: string;
+  contractType?: string;
+  workingHours?: string;
+  salary?: number;
+  bankDetails?: {
+    accountNumber: string;
+    bankName: string;
+    accountName: string;
+  };
+  emergencyContact?: {
+    name: string;
+    relationship: string;
+    phone: string;
+  };
+}
 
 interface TeacherModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (teacherData: any) => void;
-  teacherData?: any;
+  onSave: (teacherData: TeacherData) => void;
+  teacherData?: Partial<TeacherData>;
   isEdit?: boolean;
-  departments?: any[];
-  subjects?: any[];
+  departments?: Department[];
+  subjects?: Subject[];
 }
 
 const TeacherModal: React.FC<TeacherModalProps> = ({
@@ -38,7 +82,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
   const allDepartments = departments.length > 0 ? departments : defaultDepartments;
   const allSubjects = subjects.length > 0 ? subjects : defaultSubjects;
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<TeacherData, 'matricule'> & { matricule: string }>({
     matricule: teacherData?.matricule || generateMatricule(),
     firstName: teacherData?.firstName || '',
     lastName: teacherData?.lastName || '',
@@ -48,18 +92,28 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
     phone: teacherData?.phone || '',
     email: teacherData?.email || '',
     departmentId: teacherData?.departmentId || '',
-    position: teacherData?.position || '',
-    specialization: teacherData?.specialization || '',
-    subjectId: teacherData?.subjectId || '',
+    subjects: teacherData?.subjects || [],
     hireDate: teacherData?.hireDate || new Date().toISOString().split('T')[0],
-    contractType: teacherData?.contractType || 'CDI',
     status: teacherData?.status || 'active',
-    workingHours: teacherData?.workingHours || 0,
+    qualification: teacherData?.qualification || '',
+    qualifications: teacherData?.qualifications || [],
+    specialization: teacherData?.specialization || '',
+    notes: teacherData?.notes || '',
+    position: teacherData?.position || '',
+    subjectId: teacherData?.subjectId || '',
+    contractType: teacherData?.contractType || 'CDI',
+    workingHours: teacherData?.workingHours || '35',
     salary: teacherData?.salary || 0,
-    bankDetails: teacherData?.bankDetails || '',
-    emergencyContact: teacherData?.emergencyContact || '',
-    qualifications: teacherData?.qualifications || '',
-    notes: teacherData?.notes || ''
+    bankDetails: teacherData?.bankDetails || {
+      accountNumber: '',
+      bankName: '',
+      accountName: ''
+    },
+    emergencyContact: teacherData?.emergencyContact || {
+      name: '',
+      relationship: 'Autre',
+      phone: ''
+    }
   });
 
   function generateMatricule() {
@@ -69,10 +123,34 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? (value ? parseFloat(value) : 0) : value
+      [name]: value
+    }));
+  };
+
+  const handleEmergencyContactChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      emergencyContact: {
+        ...(prev.emergencyContact || { name: '', phone: '', relationship: 'Autre' }),
+        [name]: value
+      }
+    }));
+  };
+
+  const handleBankDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      bankDetails: {
+        accountNumber: prev.bankDetails?.accountNumber || '',
+        bankName: prev.bankDetails?.bankName || '',
+        accountName: prev.bankDetails?.accountName || '',
+        [name]: value
+      }
     }));
   };
 
@@ -100,9 +178,10 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
           <button
             type="submit"
             form="teacher-form"
-            className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 flex items-center"
+            className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 flex items-center"
+            aria-label={isEdit ? "Mettre à jour le membre du personnel" : "Enregistrer le nouveau membre du personnel"}
           >
-            <Save className="w-4 h-4 mr-2" />
+            <Save className="w-4 h-4 mr-2" aria-hidden="true" />
             {isEdit ? "Mettre à jour" : "Enregistrer"}
           </button>
         </div>
@@ -112,7 +191,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
         {/* Informations personnelles */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-            <User className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+            <User className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" aria-hidden="true" />
             Informations personnelles
           </h4>
           
@@ -128,8 +207,13 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
                 value={formData.matricule}
                 onChange={handleChange}
                 readOnly
+                aria-readonly="true"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                aria-describedby="matricule-help"
               />
+              <p id="matricule-help" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Identifiant unique généré automatiquement
+              </p>
             </div>
             
             <div>
@@ -143,6 +227,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
                 value={formData.firstName}
                 onChange={handleChange}
                 required
+                aria-required="true"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
@@ -158,6 +243,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
                 value={formData.lastName}
                 onChange={handleChange}
                 required
+                aria-required="true"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
@@ -218,6 +304,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
                 value={formData.phone}
                 onChange={handleChange}
                 required
+                aria-required="true"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
@@ -233,23 +320,62 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
                 value={formData.email}
                 onChange={handleChange}
                 required
+                aria-required="true"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
             
-            <div>
-              <label htmlFor="emergencyContact" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Contact d'urgence
               </label>
-              <input
-                type="text"
-                id="emergencyContact"
-                name="emergencyContact"
-                value={formData.emergencyContact}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                placeholder="Nom et téléphone"
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.emergencyContact?.name || ''}
+                    onChange={handleEmergencyContactChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="Nom"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    name="phone"
+                    value={formData.emergencyContact?.phone || ''}
+                    onChange={handleEmergencyContactChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="Téléphone"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <select
+                    name="relationship"
+                    aria-label="Relation avec le contact d'urgence"
+                    value={formData.emergencyContact?.relationship || 'Autre'}
+                    onChange={(e) => {
+                      handleEmergencyContactChange({
+                        ...e,
+                        target: {
+                          ...e.target,
+                          name: 'relationship',
+                          value: e.target.value
+                        }
+                      } as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  >
+                    <option value="Conjoint(e)">Conjoint(e)</option>
+                    <option value="Parent">Parent</option>
+                    <option value="Enfant">Enfant</option>
+                    <option value="Frère/Soeur">Frère/Soeur</option>
+                    <option value="Ami(e)">Ami(e)</option>
+                    <option value="Autre">Autre</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -257,7 +383,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
         {/* Informations professionnelles */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-            <Briefcase className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
+            <Briefcase className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" aria-hidden="true" />
             Informations professionnelles
           </h4>
           
@@ -272,6 +398,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
                 value={formData.departmentId}
                 onChange={handleChange}
                 required
+                aria-required="true"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="">Sélectionner un département</option>
@@ -292,6 +419,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
                 value={formData.position}
                 onChange={handleChange}
                 required
+                aria-required="true"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Ex: Professeur de Mathématiques"
               />
@@ -355,6 +483,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
                 value={formData.hireDate}
                 onChange={handleChange}
                 required
+                aria-required="true"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
@@ -369,6 +498,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
                 value={formData.contractType}
                 onChange={handleChange}
                 required
+                aria-required="true"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="CDI">CDI</option>
@@ -389,6 +519,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
                 value={formData.status}
                 onChange={handleChange}
                 required
+                aria-required="true"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="active">Actif</option>
@@ -417,7 +548,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
         {/* Informations financières */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-            <Calendar className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" />
+            <Calendar className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" aria-hidden="true" />
             Informations financières
           </h4>
           
@@ -437,19 +568,42 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
               />
             </div>
             
-            <div>
-              <label htmlFor="bankDetails" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Coordonnées bancaires
               </label>
-              <input
-                type="text"
-                id="bankDetails"
-                name="bankDetails"
-                value={formData.bankDetails}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                placeholder="RIB ou numéro de compte"
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <input
+                    type="text"
+                    name="bankName"
+                    value={formData.bankDetails?.bankName || ''}
+                    onChange={handleBankDetailsChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="Nom de la banque"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    name="accountNumber"
+                    value={formData.bankDetails?.accountNumber || ''}
+                    onChange={handleBankDetailsChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="Numéro de compte"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <input
+                    type="text"
+                    name="accountName"
+                    value={formData.bankDetails?.accountName || ''}
+                    onChange={handleBankDetailsChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="Nom du titulaire du compte"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -457,7 +611,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
         {/* Notes */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-            <GraduationCap className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" />
+            <GraduationCap className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" aria-hidden="true" />
             Notes et observations
           </h4>
           
@@ -476,7 +630,7 @@ const TeacherModal: React.FC<TeacherModalProps> = ({
         
         {/* Information */}
         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg flex items-start space-x-3">
-          <User className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+          <User className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" aria-hidden="true" />
           <div>
             <p className="text-sm text-blue-800 dark:text-blue-300 font-medium">Information</p>
             <p className="text-sm text-blue-700 dark:text-blue-400">

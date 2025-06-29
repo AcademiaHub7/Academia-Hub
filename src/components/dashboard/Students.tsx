@@ -18,7 +18,6 @@ import {
   UserX,
   AlertTriangle,
   CheckCircle,
-  Clock,
   Award,
   BookOpen,
   Shield
@@ -47,12 +46,35 @@ const Students: React.FC = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  interface Student {
+    id: string;
+    firstName: string;
+    lastName: string;
+    class: string;
+    age: number;
+    phone: string;
+    email: string;
+    parentName: string;
+    parentPhone: string;
+    status: string;
+    fees: string;
+    photo: string | null;
+    enrollmentDate: string;
+    medicalInfo: string;
+  }
+
+  interface AlertMessage {
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info' | 'warning';
+  }
+
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [alertMessage, setAlertMessage] = useState({ title: '', message: '', type: 'success' as 'success' | 'error' | 'info' | 'warning' });
+  const [alertMessage, setAlertMessage] = useState<AlertMessage>({ title: '', message: '', type: 'success' });
 
   // Mock data
-  const students = [
+  const students: Student[] = [
     {
       id: 'MAT-2024-00001',
       firstName: 'Marie',
@@ -218,13 +240,13 @@ const Students: React.FC = () => {
     setIsStudentModalOpen(true);
   };
 
-  const handleEditStudent = (student: any) => {
+  const handleEditStudent = (student: Student) => {
     setIsEditMode(true);
     setSelectedStudent(student);
     setIsStudentModalOpen(true);
   };
 
-  const handleDeleteStudent = (student: any) => {
+  const handleDeleteStudent = (student: Student) => {
     setSelectedStudent(student);
     setIsConfirmModalOpen(true);
   };
@@ -251,7 +273,8 @@ const Students: React.FC = () => {
     setIsDocumentModalOpen(true);
   };
 
-  const handleSaveStudent = (studentData: any) => {
+
+  const handleSaveStudent = (studentData: Omit<Student, 'id' | 'enrollmentDate'> & { id?: string }) => {
     console.log('Saving student:', studentData);
     setAlertMessage({
       title: isEditMode ? 'Élève mis à jour' : 'Élève ajouté',
@@ -263,7 +286,13 @@ const Students: React.FC = () => {
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveAbsence = (absenceData: any) => {
+  interface AbsenceData {
+    studentName: string;
+    date: string;
+    reason: string;
+  }
+
+  const handleSaveAbsence = (absenceData: AbsenceData) => {
     console.log('Saving absence:', absenceData);
     setAlertMessage({
       title: 'Absence enregistrée',
@@ -273,7 +302,14 @@ const Students: React.FC = () => {
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveDiscipline = (incidentData: any) => {
+  interface IncidentData {
+    studentName: string;
+    date: string;
+    description: string;
+    severity: 'low' | 'medium' | 'high';
+  }
+
+  const handleSaveDiscipline = (incidentData: IncidentData) => {
     console.log('Saving discipline incident:', incidentData);
     setAlertMessage({
       title: 'Incident enregistré',
@@ -283,7 +319,15 @@ const Students: React.FC = () => {
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveTransfer = (transferData: any) => {
+  interface TransferData {
+    studentName: string;
+    fromClass: string;
+    toClass: string;
+    date: string;
+    reason: string;
+  }
+
+  const handleSaveTransfer = (transferData: TransferData) => {
     console.log('Saving transfer:', transferData);
     setAlertMessage({
       title: 'Transfert effectué',
@@ -293,7 +337,14 @@ const Students: React.FC = () => {
     setIsAlertModalOpen(true);
   };
 
-  const handleGenerateDocumentSubmit = (documentData: any) => {
+  interface DocumentData {
+    documentType: string;
+    studentName: string;
+    date: string;
+    additionalNotes?: string;
+  }
+
+  const handleGenerateDocumentSubmit = (documentData: DocumentData) => {
     console.log('Generating document:', documentData);
     setAlertMessage({
       title: 'Document généré',
@@ -414,6 +465,7 @@ const Students: React.FC = () => {
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
+                    aria-label="Filtrer par classe"
                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
                     <option value="all">Toutes les classes</option>
@@ -522,22 +574,30 @@ const Students: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center space-x-2">
-                            <button className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300">
+                            <button 
+                              aria-label={`Voir les détails de ${student.firstName} ${student.lastName}`}
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                            >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => handleEditStudent(student)}
                               className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+                              aria-label={`Modifier ${student.firstName} ${student.lastName}`}
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => handleDeleteStudent(student)}
                               className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                              aria-label={`Supprimer ${student.firstName} ${student.lastName}`}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
-                            <button className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300">
+                            <button 
+                              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+                              aria-label="Plus d'options"
+                            >
                               <MoreHorizontal className="w-4 h-4" />
                             </button>
                           </div>

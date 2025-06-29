@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+// Import shared dashboard styles
+import '../../styles/dashboardStyles.css';
 import { 
   Building, 
   Plus, 
@@ -433,10 +435,9 @@ const Planning: React.FC = () => {
                           <div className="text-center">
                             <p className="text-sm text-gray-600 dark:text-gray-400">Effectif</p>
                             <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{classItem.enrolled}/{classItem.capacity}</p>
-                            <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-                              <div 
-                                className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full" 
-                                style={{ width: `${(classItem.enrolled / classItem.capacity) * 100}%` }}
+                            <div className="w-16 progress-bar-container mt-1">
+                                <div 
+                                className={`progress-bar-fill progress-bar-fill-blue w-${Math.round((classItem.enrolled / classItem.capacity) * 100 / 10) * 10}`}
                               ></div>
                             </div>
                           </div>
@@ -564,10 +565,9 @@ const Planning: React.FC = () => {
                           <div className="text-center">
                             <p className="text-sm text-gray-600 dark:text-gray-400">Charge horaire</p>
                             <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{teacher.weeklyHours}h/{teacher.maxHours}h</p>
-                            <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-                              <div 
-                                className="bg-purple-600 dark:bg-purple-500 h-2 rounded-full" 
-                                style={{ width: `${(teacher.weeklyHours / teacher.maxHours) * 100}%` }}
+                            <div className="w-16 progress-bar-container mt-1">
+                                <div 
+                                className={`progress-bar-fill progress-bar-fill-purple w-${Math.round((teacher.weeklyHours / teacher.maxHours) * 100 / 10) * 10}`}
                               ></div>
                             </div>
                           </div>

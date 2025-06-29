@@ -418,17 +418,30 @@ const Health: React.FC = () => {
                           Vaccins: {record.vaccinations}
                         </span>
                         <div className="flex space-x-2 mt-3">
-                          <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
+                          <button 
+                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                            aria-label={`Voir les détails du dossier médical de ${record.studentName}`}
+                            title="Voir les détails"
+                          >
                             <Eye className="w-4 h-4" />
+                            <span className="sr-only">Voir les détails</span>
                           </button>
                           <button 
                             className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                             onClick={() => handleEditMedicalRecord(record)}
+                            aria-label={`Modifier le dossier médical de ${record.studentName}`}
+                            title="Modifier"
                           >
                             <Edit className="w-4 h-4" />
+                            <span className="sr-only">Modifier</span>
                           </button>
-                          <button className="p-2 text-green-600 hover:bg-green-100 rounded-lg">
+                          <button 
+                            className="p-2 text-green-600 hover:bg-green-100 rounded-lg"
+                            aria-label={`Ajouter une consultation pour ${record.studentName}`}
+                            title="Nouvelle consultation"
+                          >
                             <Stethoscope className="w-4 h-4" />
+                            <span className="sr-only">Nouvelle consultation</span>
                           </button>
                         </div>
                       </div>
@@ -570,11 +583,21 @@ const Health: React.FC = () => {
                       </div>
                       
                       <div className="flex space-x-2">
-                        <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
+                        <button 
+                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                          aria-label="Modifier le médicament"
+                          title="Modifier"
+                        >
                           <Edit className="w-4 h-4" />
+                          <span className="sr-only">Modifier</span>
                         </button>
-                        <button className="p-2 text-green-600 hover:bg-green-100 rounded-lg">
+                        <button 
+                          className="p-2 text-green-600 hover:bg-green-100 rounded-lg"
+                          aria-label="Ajouter au stock"
+                          title="Ajouter au stock"
+                        >
                           <Plus className="w-4 h-4" />
+                          <span className="sr-only">Ajouter au stock</span>
                         </button>
                       </div>
                     </div>

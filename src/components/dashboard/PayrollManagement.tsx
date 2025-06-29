@@ -1,11 +1,44 @@
 import React, { useState } from 'react';
+// Types
+interface Payroll {
+  id: string;
+  employeeName: string;
+  employeeId: string;
+  employeeType: 'permanent' | 'contractor' | 'temporary';
+  department: string;
+  position: string;
+  period: string;
+  grossSalary: number;
+  netSalary: number;
+  paymentDate: string;
+  paymentMethod: string;
+  status: 'paid' | 'pending' | 'cancelled';
+}
+
+interface Declaration {
+  id: string;
+  type: 'CNSS' | 'IMPOT' | 'IRPP' | 'AUTRE';
+  period: string;
+  dueDate: string;
+  amount: number;
+  status: 'paid' | 'pending' | 'overdue';
+}
+
+interface PayrollStats {
+  title: string;
+  value: string;
+  change: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+}
+
+// Icons
 import { 
   DollarSign, 
   Plus, 
   Search, 
   Filter, 
   Download,
-  Upload,
   FileText,
   Users,
   Calendar,
@@ -20,7 +53,6 @@ import {
   TrendingUp,
   Building,
   UserCheck,
-  Briefcase,
   Calculator
 } from 'lucide-react';
 import { 
@@ -47,11 +79,11 @@ const PayrollManagement: React.FC = () => {
   const [isPayrollSettingsModalOpen, setIsPayrollSettingsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
-  const [selectedPayroll, setSelectedPayroll] = useState<any>(null);
+  const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Statistiques de paie
-  const payrollStats = [
+  const payrollStats: PayrollStats[] = [
     {
       title: 'Masse salariale mensuelle',
       value: '15.678.000 F CFA',
@@ -83,7 +115,7 @@ const PayrollManagement: React.FC = () => {
   ];
 
   // Données fictives pour les bulletins de paie
-  const payslips = [
+  const payslips: Payroll[] = [
     {
       id: 'PAY-2024-00001',
       employeeName: 'Marie Dubois',
@@ -116,7 +148,7 @@ const PayrollManagement: React.FC = () => {
       id: 'PAY-2024-00003',
       employeeName: 'Sophie Lambert',
       employeeId: 'EMP-003',
-      employeeType: 'vacataire',
+      employeeType: 'temporary', // Changed from 'vacataire' to 'temporary' to match the Payroll type
       department: 'Enseignement',
       position: 'Professeur d\'Anglais',
       period: 'Janvier 2024',
@@ -128,8 +160,15 @@ const PayrollManagement: React.FC = () => {
     }
   ];
 
+  // Extended Declaration interface with additional fields
+  interface ExtendedDeclaration extends Declaration {
+    submissionDate: string | null;
+    paymentDate: string | null;
+    reference: string | null;
+  }
+
   // Données fictives pour les déclarations
-  const declarations = [
+  const declarations: ExtendedDeclaration[] = [
     {
       id: 'DEC-CNSS-2024-01',
       type: 'CNSS',
@@ -215,38 +254,81 @@ const PayrollManagement: React.FC = () => {
     setIsPayrollModalOpen(true);
   };
 
-  const handleEditPayroll = (payroll: any) => {
+  const handleEditPayroll = (payroll: Payroll) => {
     setIsEditMode(true);
     setSelectedPayroll(payroll);
     setIsPayrollModalOpen(true);
   };
 
-  const handleDeletePayroll = (payroll: any) => {
+  const handleDeletePayroll = (payroll: Payroll) => {
     setSelectedPayroll(payroll);
     setIsConfirmModalOpen(true);
   };
 
-  const handleSavePayroll = (payrollData: any) => {
+  interface PayrollData {
+    id?: string;
+    employeeName: string;
+    employeeId: string;
+    employeeType: 'permanent' | 'contractor' | 'temporary';
+    department: string;
+    position: string;
+    period: string;
+    grossSalary: number;
+    netSalary: number;
+    paymentDate: string;
+    paymentMethod: string;
+    status: 'paid' | 'pending' | 'cancelled';
+  }
+
+  interface BatchData {
+    period: string;
+    employeeType: 'all' | 'permanent' | 'contractor' | 'temporary';
+    department: string;
+    paymentDate: string;
+  }
+
+  interface ReportOptions {
+    type: 'summary' | 'detailed' | 'tax' | 'custom';
+    period: string;
+    format: 'pdf' | 'excel' | 'csv';
+    includeDetails: boolean;
+  }
+
+  interface DeclarationOptions {
+    type: 'CNSS' | 'IMPOT' | 'IRPP' | 'AUTRE';
+    period: string;
+    dueDate: string;
+  }
+
+  interface PayrollSettings {
+    currency: string;
+    defaultPaymentMethod: string;
+    taxRate: number;
+    cnssRate: number;
+    irppBrackets: Array<{ min: number; max: number | null; rate: number }>;
+  }
+
+  const handleSavePayroll = (payrollData: PayrollData) => {
     console.log('Saving payroll:', payrollData);
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveBatch = (batchData: any) => {
+  const handleSaveBatch = (batchData: BatchData) => {
     console.log('Processing batch:', batchData);
     setIsAlertModalOpen(true);
   };
 
-  const handleGenerateReport = (reportOptions: any) => {
+  const handleGenerateReport = (reportOptions: ReportOptions) => {
     console.log('Generating report with options:', reportOptions);
     setIsAlertModalOpen(true);
   };
 
-  const handleGenerateDeclaration = (declarationOptions: any) => {
+  const handleGenerateDeclaration = (declarationOptions: DeclarationOptions) => {
     console.log('Generating declaration with options:', declarationOptions);
     setIsAlertModalOpen(true);
   };
 
-  const handleSaveSettings = (settings: any) => {
+  const handleSaveSettings = (settings: PayrollSettings) => {
     console.log('Saving settings:', settings);
     setIsAlertModalOpen(true);
   };
@@ -386,25 +468,35 @@ const PayrollManagement: React.FC = () => {
                     />
                   </div>
                   
-                  <select
-                    value={selectedPeriod}
-                    onChange={(e) => setSelectedPeriod(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="current">Période courante</option>
-                    <option value="previous">Période précédente</option>
-                    <option value="all">Toutes les périodes</option>
-                  </select>
+                  <div className="relative">
+                    <label htmlFor="period-select" className="sr-only">Sélectionner la période</label>
+                    <select
+                      id="period-select"
+                      value={selectedPeriod}
+                      onChange={(e) => setSelectedPeriod(e.target.value)}
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      aria-label="Sélectionner la période"
+                    >
+                      <option value="current">Période courante</option>
+                      <option value="previous">Période précédente</option>
+                      <option value="all">Toutes les périodes</option>
+                    </select>
+                  </div>
                   
-                  <select
-                    value={selectedEmployeeType}
-                    onChange={(e) => setSelectedEmployeeType(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="all">Tous les employés</option>
-                    <option value="permanent">Personnel permanent</option>
-                    <option value="vacataire">Personnel vacataire</option>
-                  </select>
+                  <div className="relative">
+                    <label htmlFor="employee-type-select" className="sr-only">Type d'employé</label>
+                    <select
+                      id="employee-type-select"
+                      value={selectedEmployeeType}
+                      onChange={(e) => setSelectedEmployeeType(e.target.value)}
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      aria-label="Type d'employé"
+                    >
+                      <option value="all">Tous les employés</option>
+                      <option value="permanent">Personnel permanent</option>
+                      <option value="vacataire">Personnel vacataire</option>
+                    </select>
+                  </div>
                 </div>
                 
                 <div className="flex items-center space-x-2">
@@ -493,18 +585,23 @@ const PayrollManagement: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center space-x-2">
-                            <button className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300">
+                            <button 
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                              aria-label="Voir les détails de la fiche de paie"
+                            >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => handleEditPayroll(payslip)}
                               className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+                              aria-label="Modifier la fiche de paie"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => handleDeletePayroll(payslip)}
                               className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                              aria-label="Supprimer la fiche de paie"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -586,16 +683,25 @@ const PayrollManagement: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center space-x-2">
-                            <button className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300">
+                            <button 
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                              aria-label="Voir les détails de la fiche de paie"
+                            >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300">
+                            <button 
+                              className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
+                              aria-label="Télécharger la déclaration"
+                            >
                               <Download className="w-4 h-4" />
                             </button>
                             {declaration.status === 'pending' && (
-                              <button className="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300">
-                                <CheckCircle className="w-4 h-4" />
-                              </button>
+                              <button 
+                              className="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300"
+                              aria-label="Marquer comme payé"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
                             )}
                           </div>
                         </td>

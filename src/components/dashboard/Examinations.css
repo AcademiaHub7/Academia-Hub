@@ -1,0 +1,85 @@
+/* Progress bar container - overrides for ProgressBarDynamic */
+.progress-bar-container {
+  width: 4rem;
+  height: 0.5rem; /* h-2 */
+  margin-top: 0.25rem; /* mt-1 */
+  background-color: #e5e7eb; /* bg-gray-200 */
+  border-radius: 9999px; /* rounded-full */
+  overflow: hidden;
+}
+
+.dark .progress-bar-container {
+  background-color: #374151; /* dark:bg-gray-700 */
+}
+
+/* Progress bar fill - overrides for ProgressBarDynamic */
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 9999px; /* rounded-full */
+  transition: width 0.3s ease;
+  background-color: #2563eb; /* Default blue color - will be overridden by color classes */
+}
+
+/* Color variants for progress bars */
+.progress-bar-blue .progress-bar-fill {
+  background-color: #2563eb; /* bg-blue-600 */
+}
+
+.progress-bar-green .progress-bar-fill {
+  background-color: #16a34a; /* bg-green-600 */
+}
+
+.progress-bar-red .progress-bar-fill {
+  background-color: #dc2626; /* bg-red-600 */
+}
+
+.progress-bar-purple .progress-bar-fill {
+  background-color: #7c3aed; /* bg-purple-600 */
+}
+
+.progress-bar-amber .progress-bar-fill {
+  background-color: #d97706; /* bg-amber-600 */
+}
+
+.progress-bar-cyan .progress-bar-fill {
+  background-color: #0891b2; /* bg-cyan-600 */
+}
+
+/* Button styles */
+.action-button {
+  padding: 0.5rem; /* p-2 */
+  border-radius: 0.5rem; /* rounded-lg */
+  transition: background-color 0.2s;
+}
+
+.action-button.view {
+  color: #2563eb; /* text-blue-600 */
+}
+
+.dark .action-button.view {
+  color: #60a5fa; /* dark:text-blue-400 */
+}
+
+.action-button.view:hover {
+  background-color: #dbeafe; /* hover:bg-blue-100 */
+}
+
+.dark .action-button.view:hover {
+  background-color: rgba(30, 58, 138, 0.2); /* dark:hover:bg-blue-900/20 */
+}
+
+.action-button.edit {
+  color: #4b5563; /* text-gray-600 */
+}
+
+.dark .action-button.edit {
+  color: #9ca3af; /* dark:text-gray-400 */
+}
+
+.action-button.edit:hover {
+  background-color: #f3f4f6; /* hover:bg-gray-100 */
+}
+
+.dark .action-button.edit:hover {
+  background-color: #374151; /* dark:hover:bg-gray-700 */
+}

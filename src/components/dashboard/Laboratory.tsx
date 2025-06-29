@@ -1,4 +1,17 @@
 import React, { useState } from 'react';
+// Types and Components
+import { default as EquipmentModal, type Equipment } from '../modals/EquipmentModal';
+// Import shared dashboard styles
+import '../../styles/dashboardStyles.css';
+
+interface LabEquipment extends Equipment {
+  utilization: number;
+  reservations: number;
+  lastMaintenance: string;
+  nextMaintenance: string;
+}
+
+// Icons
 import { 
   FlaskConical, 
   Plus, 
@@ -8,28 +21,21 @@ import {
   Users,
   AlertTriangle,
   CheckCircle,
-  Settings,
   Shield,
   BookOpen,
-  Clock,
   Wrench,
   Eye,
   Edit,
-  Download,
-  Upload,
   BarChart3,
   TrendingUp,
   Activity,
-  Zap,
-  Target,
   Award
 } from 'lucide-react';
-import { EquipmentModal } from '../modals';
 
 const Laboratory: React.FC = () => {
   const [activeTab, setActiveTab] = useState('equipment');
   const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
-  const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | undefined>(undefined);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const labStats = [
@@ -63,7 +69,7 @@ const Laboratory: React.FC = () => {
     }
   ];
 
-  const equipment = [
+  const equipment: LabEquipment[] = [
     {
       id: 'LAB-2024-00001',
       name: 'Microscope optique Zeiss',
@@ -231,17 +237,29 @@ const Laboratory: React.FC = () => {
 
   const handleNewEquipment = () => {
     setIsEditMode(false);
-    setSelectedEquipment(null);
+    setSelectedEquipment(undefined);
     setIsEquipmentModalOpen(true);
   };
 
-  const handleEditEquipment = (equipment: any) => {
+  const handleEditEquipment = (equipment: LabEquipment) => {
     setIsEditMode(true);
-    setSelectedEquipment(equipment);
+    // Convert LabEquipment to Equipment by omitting the additional fields
+    const equipmentData: Equipment = {
+      id: equipment.id,
+      name: equipment.name,
+      category: equipment.category,
+      location: equipment.location,
+      status: equipment.status,
+      acquisitionDate: equipment.acquisitionDate,
+      value: equipment.value,
+      lastMaintenance: equipment.lastMaintenance,
+      nextMaintenance: equipment.nextMaintenance
+    };
+    setSelectedEquipment(equipmentData);
     setIsEquipmentModalOpen(true);
   };
 
-  const handleSaveEquipment = (equipmentData: any) => {
+  const handleSaveEquipment = (equipmentData: Equipment) => {
     console.log('Saving equipment:', equipmentData);
     setIsEquipmentModalOpen(false);
     // Ici, vous implémenteriez la logique pour sauvegarder l'équipement
@@ -331,7 +349,7 @@ const Laboratory: React.FC = () => {
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900">Inventaire des équipements</h3>
                 <div className="flex space-x-2">
-                  <div className="relative">
+                  <div className="relative laboratory-search-bar">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="text"
@@ -374,10 +392,10 @@ const Laboratory: React.FC = () => {
                           <p className="text-sm text-gray-600">Utilisation</p>
                           <p className="text-lg font-bold text-blue-600">{item.utilization}%</p>
                           <div className="w-16 bg-gray-200 rounded-full h-2 mt-1">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${item.utilization}%` }}
-                            ></div>
+                             <div 
+                               className="progress-bar blue"
+                               data-progress-width={item.utilization}
+                             ></div>
                           </div>
                         </div>
                         
@@ -393,17 +411,30 @@ const Laboratory: React.FC = () => {
                       </div>
                       
                       <div className="flex space-x-2">
-                        <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
-                          <Eye className="w-4 h-4" />
+                        <button 
+                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                          aria-label={`Voir les détails de l'équipement ${item.name}`}
+                          title="Voir les détails"
+                        >
+                          <Eye className="w-4 h-4" aria-hidden="true" />
+                          <span className="sr-only">Voir les détails</span>
                         </button>
                         <button 
                           onClick={() => handleEditEquipment(item)}
                           className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                          aria-label={`Modifier l'équipement ${item.name}`}
+                          title="Modifier"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-4 h-4" aria-hidden="true" />
+                          <span className="sr-only">Modifier</span>
                         </button>
-                        <button className="p-2 text-green-600 hover:bg-green-100 rounded-lg">
-                          <Calendar className="w-4 h-4" />
+                        <button 
+                          className="p-2 text-green-600 hover:bg-green-100 rounded-lg"
+                          aria-label={`Planifier la maintenance pour ${item.name}`}
+                          title="Planifier maintenance"
+                        >
+                          <Calendar className="w-4 h-4" aria-hidden="true" />
+                          <span className="sr-only">Planifier maintenance</span>
                         </button>
                       </div>
                     </div>
@@ -440,7 +471,7 @@ const Laboratory: React.FC = () => {
                       </div>
                       
                       <div className="text-right">
-                        <div className="flex items-center space-x-4 mb-2">
+                        <div className="overflow-y-auto laboratory-full-height">
                           <div className="text-center">
                             <p className="text-sm text-gray-600">Élèves</p>
                             <p className="text-lg font-bold text-blue-600">{session.students}</p>
@@ -518,10 +549,10 @@ const Laboratory: React.FC = () => {
                           <p className="text-sm text-gray-600">Conformité</p>
                           <p className="text-lg font-bold text-green-600">{protocol.compliance}%</p>
                           <div className="w-16 bg-gray-200 rounded-full h-2 mt-1">
-                            <div 
-                              className="bg-green-600 h-2 rounded-full" 
-                              style={{ width: `${protocol.compliance}%` }}
-                            ></div>
+                             <div 
+                               className="progress-bar green"
+                               data-progress-width={protocol.compliance}
+                             ></div>
                           </div>
                         </div>
                         

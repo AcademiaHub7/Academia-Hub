@@ -1,11 +1,28 @@
 import React, { useState } from 'react';
 import FormModal from './FormModal';
-import { DollarSign, Save, Calendar, Clock, Download, Upload, FileText, Users } from 'lucide-react';
+import { DollarSign, Save, Calendar, Clock, Download, FileText, Users } from 'lucide-react';
+import MonthPicker from '../common/MonthPicker';
 
 interface PayrollBatchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (batchData: any) => void;
+  onSave: (batchData: PayrollBatchData) => void;
+}
+
+interface PayrollBatchData {
+  payPeriod: string;
+  paymentDate: string;
+  description: string;
+  employeeTypes: string[];
+  departments: string[];
+  includeAllowances: boolean;
+  includeOvertime: boolean;
+  generateDeclarations: boolean;
+  comments: string;
+  // Add any additional specific fields here with proper types
+  // Example:
+  // customField1?: string;
+  // customField2?: number;
 }
 
 const PayrollBatchModal: React.FC<PayrollBatchModalProps> = ({
@@ -13,12 +30,12 @@ const PayrollBatchModal: React.FC<PayrollBatchModalProps> = ({
   onClose,
   onSave
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PayrollBatchData>({
     payPeriod: new Date().toISOString().split('T')[0].substring(0, 7), // Format YYYY-MM
     paymentDate: new Date().toISOString().split('T')[0], // Format YYYY-MM-DD
     description: '',
-    employeeTypes: ['permanent', 'vacataire'],
-    departments: [],
+    employeeTypes: [] as string[],
+    departments: [] as string[],
     includeAllowances: true,
     includeOvertime: true,
     generateDeclarations: true,
@@ -44,7 +61,8 @@ const PayrollBatchModal: React.FC<PayrollBatchModalProps> = ({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     
     if (name === 'departments') {
       // Gestion des sélections multiples pour les départements
@@ -122,17 +140,13 @@ const PayrollBatchModal: React.FC<PayrollBatchModalProps> = ({
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="payPeriod" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Période de paie*
               </label>
-              <input
-                type="month"
-                id="payPeriod"
-                name="payPeriod"
+              <MonthPicker
                 value={formData.payPeriod}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                onChange={(value: string) => setFormData(prev => ({ ...prev, payPeriod: value }))}
+                label="Période de paie"
               />
             </div>
             

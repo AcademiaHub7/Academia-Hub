@@ -2,24 +2,26 @@ import React, { useState } from 'react';
 import FormModal from './FormModal';
 import { UtensilsCrossed, Save } from 'lucide-react';
 
-interface Menu {
-  id?: string;
+export interface Menu {
+  id: string;
   date: string;
   type: string;
   starter: string;
   main: string;
   side: string;
   dessert: string;
-  nutritionalScore: string;
+  nutritionalScore: 'A' | 'B' | 'C' | 'D';
   allergens: string[];
   cost: number;
+  reservations: number;
+  status: 'confirmed' | 'planned' | 'cancelled';
 }
 
 interface MenuModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (menu: Menu) => void;
-  menu?: Menu;
+  menu?: Omit<Menu, 'id' | 'reservations'>;
   isEdit?: boolean;
 }
 
@@ -35,19 +37,18 @@ const MenuModal: React.FC<MenuModalProps> = ({
     'Fruits à coque', 'Soja', 'Céleri', 'Moutarde', 'Sésame', 'Sulfites'
   ];
 
-  const [formData, setFormData] = useState<Menu>(
-    menu || {
-      date: new Date().toISOString().split('T')[0],
-      type: 'Déjeuner',
-      starter: '',
-      main: '',
-      side: '',
-      dessert: '',
-      nutritionalScore: 'A',
-      allergens: [],
-      cost: 0
-    }
-  );
+  const [formData, setFormData] = useState<Omit<Menu, 'id' | 'reservations'>>({
+    date: menu?.date || new Date().toISOString().split('T')[0],
+    type: menu?.type || 'Déjeuner',
+    starter: menu?.starter || '',
+    main: menu?.main || '',
+    side: menu?.side || '',
+    dessert: menu?.dessert || '',
+    nutritionalScore: menu?.nutritionalScore || 'A',
+    allergens: menu?.allergens || [],
+    cost: menu?.cost || 0,
+    status: menu?.status || 'planned',
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -73,7 +74,12 @@ const MenuModal: React.FC<MenuModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    const newMenu: Menu = {
+      ...formData,
+      id: (menu as Menu)?.id || Date.now().toString(),
+      reservations: (menu as Menu)?.reservations || 0,
+    };
+    onSave(newMenu);
     onClose();
   };
 

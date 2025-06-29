@@ -1,12 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import FormModal from './FormModal';
-import { DollarSign, Save, Calculator, Download, FileText, User, Calendar, Clock } from 'lucide-react';
+import { DollarSign, Save, Calculator, FileText, User } from 'lucide-react';
+import MonthPicker from '../common/MonthPicker';
+
+// Define interfaces for our data types
+interface Allowances {
+  transport: number;
+  housing: number;
+  responsibility: number;
+  performance: number;
+  other: number;
+}
+
+interface Benefits {
+  vehicle: boolean;
+  housing: boolean;
+  phone: boolean;
+}
+
+interface Deductions {
+  advance: number;
+  loan: number;
+  other: number;
+}
+
+interface Overtime {
+  hours: number;
+  rate: number;
+}
+
+interface Employee {
+  id: number;
+  name: string;
+  position: string;
+  department: string;
+  baseSalary: number;
+  type?: 'permanent' | 'vacataire';
+  workingHours?: number;
+  hourlyRate?: number;
+  allowances?: Partial<Allowances>;
+  benefits?: Partial<Benefits>;
+  deductions?: Partial<Deductions>;
+  overtime?: Partial<Overtime>;
+  absences?: number;
+  paymentMethod?: string;
+  bankDetails?: string;
+  comments?: string;
+}
+
+interface PayrollData {
+  id?: number;
+  employeeId: number | string;
+  employeeName: string;
+  employeeType: 'permanent' | 'vacataire';
+  payPeriod: string; // Changed from 'month' to 'payPeriod' for consistency
+  baseSalary: number;
+  workingHours: number;
+  hourlyRate: number;
+  allowances: Allowances;
+  benefits: Benefits;
+  deductions: Deductions;
+  overtime: Overtime;
+  absences: number;
+  paymentMethod: string;
+  bankDetails: string;
+  comments: string;
+  grossSalary: number;
+  netSalary: number;
+  includeAllowances: boolean;
+  includeOvertime: boolean;
+}
 
 interface PayrollModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (payrollData: any) => void;
-  employeeData?: any;
+  onSave: (payrollData: PayrollData) => void;
+  employeeData?: Employee;
   isEdit?: boolean;
 }
 
@@ -17,23 +86,24 @@ const PayrollModal: React.FC<PayrollModalProps> = ({
   employeeData,
   isEdit = false
 }) => {
-  // Constantes pour les calculs de paie selon la réglementation béninoise
-  const CNSS_EMPLOYEE_RATE = 3.6; // 3,6% pour la part salariale
-  const CNSS_EMPLOYER_RATE = 16.4; // 16,4% pour la part patronale
-  const CNSS_CEILING = 1000000; // Plafond CNSS en F CFA
-  const PROFESSIONAL_TRAINING_TAX = 1.2; // Taxe de formation professionnelle 1,2%
+  // Constants for payroll calculations according to Benin regulations
+  const CNSS_EMPLOYEE_RATE = 3.6; // 3.6% employee contribution
+  const CNSS_EMPLOYER_RATE = 16.4; // 16.4% employer contribution
+  const CNSS_CEILING = 1000000; // CNSS ceiling in FCFA
+  const PROFESSIONAL_TRAINING_TAX = 1.2; // Professional training tax 1.2%
 
-  // Barème IRPP (Impôt sur le Revenu des Personnes Physiques) au Bénin
-  const IRPP_BRACKETS = [
-    { min: 0, max: 50000, rate: 0 },
-    { min: 50001, max: 130000, rate: 10 },
-    { min: 130001, max: 280000, rate: 15 },
-    { min: 280001, max: 530000, rate: 20 },
-    { min: 530001, Infinity: 30 }
-  ];
+  // Define the form data type
+  type FormData = Omit<PayrollData, 'id' | 'grossSalary' | 'netSalary' | 'includeAllowances' | 'includeOvertime'> & {
+    employeeId: string | number;
+    employeeName: string;
+    payPeriod: string;
+    paymentMethod: string;
+    bankDetails: string;
+    comments: string;
+  };
 
-  // État initial du formulaire
-  const [formData, setFormData] = useState({
+  // Form state
+  const [formData, setFormData] = useState<FormData>({
     employeeId: employeeData?.id || '',
     employeeName: employeeData?.name || '',
     employeeType: employeeData?.type || 'permanent', // 'permanent' ou 'vacataire'
@@ -80,56 +150,113 @@ const PayrollModal: React.FC<PayrollModalProps> = ({
     totalEmployerCost: 0
   });
 
-  // Gestion des changements dans le formulaire
+  // Handle form field changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type } = e.target;
+    const target = e.target as HTMLInputElement;
     
     if (name.includes('.')) {
       // Gestion des champs imbriqués (allowances, benefits, deductions, overtime)
       const [parent, child] = name.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev],
-          [child]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) || 0 : value
+      
+      setFormData(prev => {
+        const newValue = type === 'checkbox' 
+          ? target.checked 
+          : type === 'number' 
+            ? parseFloat(value) || 0 
+            : value;
+        
+        // Handle different nested object types with proper typing
+        if (parent === 'allowances') {
+          return {
+            ...prev,
+            allowances: {
+              ...prev.allowances,
+              [child]: newValue as number
+            }
+          };
+        } else if (parent === 'benefits') {
+          return {
+            ...prev,
+            benefits: {
+              ...prev.benefits,
+              [child]: newValue as boolean
+            }
+          };
+        } else if (parent === 'deductions') {
+          return {
+            ...prev,
+            deductions: {
+              ...prev.deductions,
+              [child]: newValue as number
+            }
+          };
+        } else if (parent === 'overtime') {
+          return {
+            ...prev,
+            overtime: {
+              ...prev.overtime,
+              [child]: newValue as number
+            }
+          };
         }
-      }));
+        
+        return { ...prev };
+      });
     } else {
       // Gestion des champs simples
+      const newValue = type === 'checkbox' 
+        ? target.checked 
+        : type === 'number' 
+          ? parseFloat(value) || 0 
+          : value;
+          
       setFormData(prev => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) || 0 : value
+        [name]: newValue
       }));
     }
   };
 
-  // Calcul de l'IRPP selon le barème progressif
-  const calculateIRPP = (taxableIncome: number): number => {
+  // Calculate IRPP tax based on income brackets
+  const calculateIRPP = useCallback((taxableIncome: number): number => {
+    // IRPP brackets (Impôt sur le Revenu des Personnes Physiques) in Benin
+    const IRPP_BRACKETS = [
+      { min: 0, max: 50000, rate: 0 },
+      { min: 50001, max: 130000, rate: 10 },
+      { min: 130001, max: 280000, rate: 15 },
+      { min: 280001, max: 530000, rate: 20 },
+      { min: 530001, max: 1000000, rate: 25 },
+      { min: 1000001, max: Infinity, rate: 30 }
+    ];
+
     let tax = 0;
-    let remainingIncome = taxableIncome;
+    let previousMax = 0;
     
     for (const bracket of IRPP_BRACKETS) {
-      if (remainingIncome <= 0) break;
-      
-      const taxableAmount = Math.min(remainingIncome, (bracket.max || Infinity) - bracket.min);
-      tax += (taxableAmount * bracket.rate) / 100;
-      remainingIncome -= taxableAmount;
+      if (taxableIncome > bracket.min) {
+        const bracketAmount = Math.min(taxableIncome, bracket.max as number) - previousMax;
+        tax += (bracketAmount * (bracket.rate || 0)) / 100;
+        previousMax = bracket.max as number;
+      } else {
+        break;
+      }
     }
     
-    return tax;
-  };
+    return Math.round(tax);
+  }, []);
 
   // Calcul complet de la paie
-  const calculatePayroll = () => {
+  const calculatePayroll = useCallback((): void => {
     let grossSalary = 0;
     
     // Calcul du salaire brut selon le type d'employé
     if (formData.employeeType === 'permanent') {
-      // Pour les employés permanents, on utilise le salaire de base
+      // Pour les employés permanents, on part du salaire de base
       grossSalary = formData.baseSalary;
       
-      // Ajout des indemnités
-      const totalAllowances = Object.values(formData.allowances).reduce((sum, value) => sum + (value as number), 0);
+      // On ajoute les indemnités
+      const totalAllowances = Object.values(formData.allowances).reduce((sum: number, value) => sum + (value as number), 0);
       grossSalary += totalAllowances;
       
       // Ajout des heures supplémentaires
@@ -156,7 +283,7 @@ const PayrollModal: React.FC<PayrollModalProps> = ({
     const irpp = calculateIRPP(taxableIncome);
     
     // Autres déductions
-    const totalDeductions = Object.values(formData.deductions).reduce((sum, value) => sum + (value as number), 0);
+    const totalDeductions = Object.values(formData.deductions).reduce((sum: number, value) => sum + (value as number), 0);
     
     // Calcul du salaire net
     const netSalary = taxableIncome - irpp - totalDeductions;
@@ -176,14 +303,14 @@ const PayrollModal: React.FC<PayrollModalProps> = ({
       netSalary,
       totalEmployerCost
     });
-  };
+  }, [formData, CNSS_CEILING, CNSS_EMPLOYEE_RATE, CNSS_EMPLOYER_RATE, PROFESSIONAL_TRAINING_TAX, calculateIRPP, setCalculatedResults]);
 
-  // Calcul automatique lorsque les données du formulaire changent
-  React.useEffect(() => {
+  // Recalculate when form data changes
+  useEffect(() => {
     calculatePayroll();
-  }, [formData]);
+  }, [calculatePayroll]);
 
-  // Formatage des montants en F CFA
+  // Format currency in FCFA
   const formatAmount = (amount: number): string => {
     return amount.toLocaleString('fr-FR', {
       minimumFractionDigits: 0,
@@ -191,14 +318,32 @@ const PayrollModal: React.FC<PayrollModalProps> = ({
     });
   };
 
-  // Soumission du formulaire
+  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Préparation des données à envoyer
-    const payrollData = {
+    const payrollData: PayrollData = {
       ...formData,
-      calculations: calculatedResults
+      employeeId: Number(formData.employeeId) || 0,
+      employeeName: formData.employeeName,
+      employeeType: formData.employeeType,
+      payPeriod: formData.payPeriod,
+      baseSalary: formData.baseSalary,
+      workingHours: formData.workingHours,
+      hourlyRate: formData.hourlyRate,
+      allowances: { ...formData.allowances },
+      benefits: { ...formData.benefits },
+      deductions: { ...formData.deductions },
+      overtime: { ...formData.overtime },
+      absences: formData.absences,
+      paymentMethod: formData.paymentMethod,
+      bankDetails: formData.bankDetails,
+      comments: formData.comments,
+      grossSalary: calculatedResults.grossSalary,
+      netSalary: calculatedResults.netSalary,
+      includeAllowances: true,
+      includeOvertime: formData.overtime.hours > 0
     };
     
     onSave(payrollData);
@@ -303,14 +448,11 @@ const PayrollModal: React.FC<PayrollModalProps> = ({
               <label htmlFor="payPeriod" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Période de paie*
               </label>
-              <input
-                type="month"
-                id="payPeriod"
-                name="payPeriod"
+              <MonthPicker
                 value={formData.payPeriod}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                onChange={(value: string) => setFormData(prev => ({ ...prev, payPeriod: value }))}
+                label=""
+                className="w-full"
               />
             </div>
           </div>
@@ -690,7 +832,7 @@ const PayrollModal: React.FC<PayrollModalProps> = ({
               <div className="flex justify-between">
                 <span className="text-blue-800 dark:text-blue-300">Autres déductions:</span>
                 <span className="font-medium text-blue-900 dark:text-blue-200">
-                  -{formatAmount(Object.values(formData.deductions).reduce((sum, value) => sum + (value as number), 0))} F CFA
+                  -{formatAmount(Object.values(formData.deductions).reduce((sum: number, value) => sum + (value as number), 0))} F CFA
                 </span>
               </div>
               

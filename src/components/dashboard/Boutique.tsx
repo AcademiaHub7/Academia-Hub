@@ -18,16 +18,15 @@ import {
   Download,
   Upload,
   CheckCircle,
-  Clock,
-  AlertTriangle,
+  Calendar,
+  PieChart,
+  Save,
   DollarSign,
   Percent,
   Box,
-  Layers,
   Users,
   FileText,
   Settings,
-  Clipboard,
   RefreshCw
 } from 'lucide-react';
 
@@ -536,20 +535,26 @@ const Boutique: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                 <div className="flex items-center space-x-4">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <label htmlFor="product-search" className="sr-only">Rechercher un produit</label>
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
                     <input
-                      type="text"
+                      id="product-search"
+                      type="search"
                       placeholder="Rechercher un produit..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                      aria-label="Rechercher un produit"
                     />
                   </div>
                   
+                  <label htmlFor="category-select" className="sr-only">Catégorie</label>
                   <select
+                    id="category-select"
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    aria-label="Sélectionner une catégorie"
                   >
                     {categories.map(category => (
                       <option key={category.id} value={category.id}>{category.name}</option>
@@ -627,14 +632,26 @@ const Boutique: React.FC = () => {
                           Stock: <span className={product.stock === 0 ? 'text-red-600 font-medium' : 'font-medium'}>{product.stock}</span>
                         </div>
                         <div className="flex space-x-2">
-                          <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
-                            <Eye className="w-4 h-4" />
+                          <button 
+                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                            aria-label="Voir les détails du produit"
+                            title="Voir les détails"
+                          >
+                            <Eye className="w-4 h-4" aria-hidden="true" />
                           </button>
-                          <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                            <Edit className="w-4 h-4" />
+                          <button 
+                            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                            aria-label="Modifier le produit"
+                            title="Modifier"
+                          >
+                            <Edit className="w-4 h-4" aria-hidden="true" />
                           </button>
-                          <button className="p-2 text-red-600 hover:bg-red-100 rounded-lg">
-                            <Trash2 className="w-4 h-4" />
+                          <button 
+                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
+                            aria-label="Supprimer le produit"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-4 h-4" aria-hidden="true" />
                           </button>
                         </div>
                       </div>
@@ -984,11 +1001,14 @@ const Boutique: React.FC = () => {
                 <h3 className="text-lg font-medium text-gray-900">Gestion des clients</h3>
                 <div className="flex space-x-2">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <label htmlFor="customer-search" className="sr-only">Rechercher un client</label>
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
                     <input
-                      type="text"
+                      id="customer-search"
+                      type="search"
                       placeholder="Rechercher un client..."
                       className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      aria-label="Rechercher un client"
                     />
                   </div>
                   <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
@@ -1164,8 +1184,12 @@ const Boutique: React.FC = () => {
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900">Rapports et analyses</h3>
                 <div className="flex space-x-2">
-                  <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                    <Calendar className="w-4 h-4 mr-2" />
+                  <button 
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    aria-label="Sélectionner la période"
+                    title="Période"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" aria-hidden="true" />
                     Période
                   </button>
                   <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
@@ -1180,7 +1204,12 @@ const Boutique: React.FC = () => {
                 <div className="bg-white border border-gray-200 rounded-xl p-6">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">Ventes par catégorie</h4>
                   <div className="h-64 flex items-center justify-center">
-                    <PieChart className="w-32 h-32 text-blue-200" />
+                    <PieChart 
+                    className="w-32 h-32 text-blue-200" 
+                    aria-hidden="true" 
+                    role="img"
+                    aria-label="Graphique en camembert des ventes par catégorie"
+                  />
                   </div>
                   <div className="mt-4 space-y-2">
                     <div className="flex justify-between text-sm">
@@ -1329,8 +1358,12 @@ const Boutique: React.FC = () => {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900">Paramètres de la boutique</h3>
-                <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  <Save className="w-4 h-4 mr-2" />
+                <button 
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  aria-label="Enregistrer les paramètres"
+                  type="button"
+                >
+                  <Save className="w-4 h-4 mr-2" aria-hidden="true" />
                   Enregistrer
                 </button>
               </div>
@@ -1346,8 +1379,12 @@ const Boutique: React.FC = () => {
                       </label>
                       <input
                         type="text"
+                        id="shop-name"
+                        name="shopName"
                         defaultValue="Boutique Academia"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        aria-required="true"
+                        aria-label="Nom de la boutique"
                       />
                     </div>
                     <div>
@@ -1355,9 +1392,13 @@ const Boutique: React.FC = () => {
                         Description
                       </label>
                       <textarea
+                        id="shop-description"
+                        name="description"
                         rows={3}
                         defaultValue="Boutique officielle de l'établissement proposant uniformes, fournitures et matériel pédagogique."
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        aria-label="Description de la boutique"
+                        aria-required="false"
                       />
                     </div>
                     <div>
@@ -1365,9 +1406,12 @@ const Boutique: React.FC = () => {
                         Email de contact
                       </label>
                       <input
+                        id="contact-email"
+                        name="email"
                         type="email"
                         defaultValue="boutique@ecole-exemple.fr"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        aria-label="Adresse email de contact"
                       />
                     </div>
                     <div>
@@ -1375,9 +1419,12 @@ const Boutique: React.FC = () => {
                         Téléphone
                       </label>
                       <input
+                        id="contact-phone"
+                        name="phone"
                         type="tel"
                         defaultValue="01 23 45 67 89"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        aria-label="Numéro de téléphone de contact"
                       />
                     </div>
                   </div>
@@ -1393,19 +1440,46 @@ const Boutique: React.FC = () => {
                       </label>
                       <div className="space-y-2">
                         <label className="flex items-center">
-                          <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            type="checkbox" 
+                            id="payment-card" 
+                            name="paymentMethods" 
+                            value="card"
+                            defaultChecked 
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
                           <span className="ml-2 text-sm text-gray-700">Carte bancaire</span>
                         </label>
                         <label className="flex items-center">
-                          <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            type="checkbox" 
+                            id="payment-mobile" 
+                            name="paymentMethods" 
+                            value="mobile"
+                            defaultChecked 
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
                           <span className="ml-2 text-sm text-gray-700">Mobile Money</span>
                         </label>
                         <label className="flex items-center">
-                          <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            type="checkbox" 
+                            id="payment-school" 
+                            name="paymentMethods" 
+                            value="school"
+                            defaultChecked 
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
                           <span className="ml-2 text-sm text-gray-700">Compte école (facturation)</span>
                         </label>
                         <label className="flex items-center">
-                          <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            type="checkbox" 
+                            id="payment-cash" 
+                            name="paymentMethods" 
+                            value="cash"
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
                           <span className="ml-2 text-sm text-gray-700">Espèces</span>
                         </label>
                       </div>
@@ -1414,7 +1488,11 @@ const Boutique: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Devise
                       </label>
-                      <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      <select 
+                        id="currency-select"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        aria-label="Sélectionner une devise"
+                      >
                         <option>EUR (€)</option>
                         <option>USD ($)</option>
                         <option>XOF (FCFA)</option>
@@ -1425,9 +1503,15 @@ const Boutique: React.FC = () => {
                         Taux de TVA (%)
                       </label>
                       <input
+                        id="vat-rate"
+                        name="vatRate"
                         type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
                         defaultValue="20"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        aria-label="Taux de TVA en pourcentage"
                       />
                     </div>
                   </div>
@@ -1443,15 +1527,38 @@ const Boutique: React.FC = () => {
                       </label>
                       <div className="space-y-2">
                         <label className="flex items-center">
-                          <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            type="checkbox" 
+                            id="delivery-pickup" 
+                            name="deliveryMethods" 
+                            value="pickup"
+                            defaultChecked 
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            aria-label="Retrait à l'établissement"
+                          />
                           <span className="ml-2 text-sm text-gray-700">Retrait à l'établissement</span>
                         </label>
                         <label className="flex items-center">
-                          <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-                          <span className="ml-2 text-sm text-gray-700">Remise à l'élève</span>
+                          <input 
+                            type="checkbox" 
+                            id="delivery-classroom" 
+                            name="deliveryMethods" 
+                            value="classroom"
+                            defaultChecked 
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            aria-label="Livraison en classe (élèves)"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">Livraison en classe (élèves)</span>
                         </label>
                         <label className="flex items-center">
-                          <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            type="checkbox" 
+                            id="delivery-home" 
+                            name="deliveryMethods" 
+                            value="home"
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            aria-label="Livraison à domicile"
+                          />
                           <span className="ml-2 text-sm text-gray-700">Livraison à domicile</span>
                         </label>
                       </div>
@@ -1461,11 +1568,14 @@ const Boutique: React.FC = () => {
                         Horaires de retrait
                       </label>
                       <textarea
+                        id="pickup-hours"
+                        name="pickupHours"
                         rows={3}
                         defaultValue="Lundi au vendredi: 8h-12h, 14h-17h
 Mercredi: 8h-12h
 Samedi: Fermé"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        aria-label="Horaires de retrait"
                       />
                     </div>
                     <div>
@@ -1473,9 +1583,13 @@ Samedi: Fermé"
                         Délai de préparation (heures)
                       </label>
                       <input
+                        id="preparation-time"
+                        name="preparationTime"
                         type="number"
+                        min="1"
                         defaultValue="24"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        aria-label="Délai de préparation en heures"
                       />
                     </div>
                   </div>
@@ -1491,19 +1605,43 @@ Samedi: Fermé"
                       </label>
                       <div className="space-y-2">
                         <label className="flex items-center">
-                          <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            id="notif-email-confirm"
+                            type="checkbox" 
+                            defaultChecked 
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            aria-label="Activer l'email de confirmation de commande"
+                          />
                           <span className="ml-2 text-sm text-gray-700">Email de confirmation de commande</span>
                         </label>
                         <label className="flex items-center">
-                          <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            id="notif-sms-confirm"
+                            type="checkbox" 
+                            defaultChecked 
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            aria-label="Activer le SMS de confirmation de commande"
+                          />
                           <span className="ml-2 text-sm text-gray-700">SMS de confirmation de commande</span>
                         </label>
                         <label className="flex items-center">
-                          <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            id="notif-preparation"
+                            type="checkbox" 
+                            defaultChecked 
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            aria-label="Activer la notification de préparation"
+                          />
                           <span className="ml-2 text-sm text-gray-700">Notification de préparation</span>
                         </label>
                         <label className="flex items-center">
-                          <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            id="notif-availability"
+                            type="checkbox" 
+                            defaultChecked 
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            aria-label="Activer la notification de disponibilité"
+                          />
                           <span className="ml-2 text-sm text-gray-700">Notification de disponibilité</span>
                         </label>
                       </div>
@@ -1514,15 +1652,33 @@ Samedi: Fermé"
                       </label>
                       <div className="space-y-2">
                         <label className="flex items-center">
-                          <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            id="admin-notif-new-order"
+                            type="checkbox" 
+                            defaultChecked 
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            aria-label="Activer la notification de nouvelle commande pour l'administrateur"
+                          />
                           <span className="ml-2 text-sm text-gray-700">Nouvelle commande</span>
                         </label>
                         <label className="flex items-center">
-                          <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            id="admin-notif-low-stock"
+                            type="checkbox" 
+                            defaultChecked 
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            aria-label="Activer la notification de stock faible pour l'administrateur"
+                          />
                           <span className="ml-2 text-sm text-gray-700">Stock faible</span>
                         </label>
                         <label className="flex items-center">
-                          <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <input 
+                            id="admin-notif-daily-report"
+                            type="checkbox" 
+                            defaultChecked 
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            aria-label="Activer le rapport quotidien pour l'administrateur"
+                          />
                           <span className="ml-2 text-sm text-gray-700">Rapport quotidien</span>
                         </label>
                       </div>

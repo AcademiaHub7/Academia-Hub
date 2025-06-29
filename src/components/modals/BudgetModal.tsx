@@ -229,6 +229,7 @@ const BudgetModal: React.FC<BudgetModalProps> = ({
             </h4>
             <button
               type="button"
+              aria-label="Ajouter un élément budgétaire"
               onClick={handleAddItem}
               className="px-3 py-1 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800 flex items-center text-sm"
             >
@@ -271,6 +272,7 @@ const BudgetModal: React.FC<BudgetModalProps> = ({
                     <tr key={index}>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <select
+                          aria-label="Catégorie de l'élément budgétaire"
                           value={item.category}
                           onChange={(e) => handleItemChange(index, 'category', e.target.value)}
                           required
@@ -289,40 +291,41 @@ const BudgetModal: React.FC<BudgetModalProps> = ({
                           onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                           required
                           className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-                          placeholder="Description"
+                          placeholder="Description de l'élément"
                         />
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3">
                         <input
                           type="number"
-                          value={item.budgetAmount}
-                          onChange={(e) => handleItemChange(index, 'budgetAmount', parseFloat(e.target.value) || 0)}
+                          value={item.budgeted}
+                          onChange={(e) => handleItemChange(index, 'budgeted', parseFloat(e.target.value) || 0)}
                           required
                           min="0"
-                          step="100"
-                          className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm text-right"
+                          step="0.01"
+                          className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm text-right"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="number"
+                          value={item.actual}
+                          onChange={(e) => handleItemChange(index, 'actual', parseFloat(e.target.value) || 0)}
+                          min="0"
+                          step="0.01"
+                          className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm text-right"
                         />
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <input
-                          type="number"
-                          value={item.actualAmount}
-                          onChange={(e) => handleItemChange(index, 'actualAmount', parseFloat(e.target.value) || 0)}
-                          min="0"
-                          step="100"
-                          className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm text-right"
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium">
-                        <span className={`${(item.budgetAmount || 0) - (item.actualAmount || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {formatAmount((item.budgetAmount || 0) - (item.actualAmount || 0))} F CFA
+                        <span className={`${(item.actual || 0) <= (item.budgeted || 0) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {formatAmount((item.actual || 0) - (item.budgeted || 0))} F CFA
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button
                           type="button"
                           onClick={() => handleRemoveItem(index)}
-                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                          aria-label="Supprimer cet élément"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

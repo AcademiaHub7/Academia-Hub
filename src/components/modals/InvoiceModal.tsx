@@ -279,6 +279,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     <tr key={index}>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <select
+                          aria-label="Type de frais"
                           value={item.feeTypeId}
                           onChange={(e) => handleItemChange(index, 'feeTypeId', e.target.value)}
                           required
@@ -293,11 +294,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       <td className="px-4 py-3">
                         <input
                           type="text"
+                          aria-label="Description"
+                          placeholder="Description"
                           value={item.description}
                           onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                           required
                           className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-                          placeholder="Description"
                         />
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -310,25 +312,25 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                           className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm text-center"
                         />
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-center">
                         <input
                           type="number"
-                          value={item.unitPrice}
-                          onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                          value={item.price}
+                          onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value) || 0)}
                           required
                           min="0"
-                          step="100"
+                          step="0.01"
                           className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm text-right"
                         />
                       </td>
-                      <td className="px-4 py-3 text-right font-medium">
-                        {formatAmount(item.totalPrice || 0)} F CFA
+                      <td className="px-4 py-3 text-right">
+                        {formatAmount(item.quantity * item.price)} F CFA
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button
                           type="button"
-                          onClick={() => handleRemoveItem(index)}
-                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                          onClick={() => removeItem(index)}
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

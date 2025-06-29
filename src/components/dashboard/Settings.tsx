@@ -7,7 +7,6 @@ import {
   Bell,
   CreditCard,
   Database,
-  Globe,
   Save,
   Upload,
   Download,
@@ -85,6 +84,7 @@ const Settings: React.FC = () => {
                       type="text"
                       defaultValue="École Exemple"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      aria-label="Nom de l'établissement"
                     />
                   </div>
 
@@ -92,7 +92,10 @@ const Settings: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Type d'établissement
                     </label>
-                    <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <select 
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      aria-label="Type d'établissement"
+                    >
                       <option>École primaire</option>
                       <option>Collège</option>
                       <option>Lycée</option>
@@ -107,6 +110,7 @@ const Settings: React.FC = () => {
                     </label>
                     <textarea
                       rows={3}
+                      aria-label="Adresse de l'établissement"
                       defaultValue="123 Rue de l'Éducation, 75001 Paris, France"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -118,6 +122,7 @@ const Settings: React.FC = () => {
                     </label>
                     <input
                       type="tel"
+                      aria-label="Numéro de téléphone de l'établissement"
                       defaultValue="01 23 45 67 89"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -129,6 +134,7 @@ const Settings: React.FC = () => {
                     </label>
                     <input
                       type="email"
+                      aria-label="Adresse email de l'établissement"
                       defaultValue="contact@ecole-exemple.fr"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -224,17 +230,31 @@ const Settings: React.FC = () => {
                     
                     <div className="space-y-3">
                       <label className="flex items-center">
-                        <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          defaultChecked 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" 
+                          aria-label="Activer l'authentification à deux facteurs"
+                        />
                         <span className="ml-3 text-sm text-gray-700">Authentification à deux facteurs obligatoire</span>
                       </label>
                       
                       <label className="flex items-center">
-                        <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          defaultChecked 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          aria-label="Activer l'expiration automatique des sessions"
+                        />
                         <span className="ml-3 text-sm text-gray-700">Expiration automatique des sessions (30 min)</span>
                       </label>
                       
                       <label className="flex items-center">
-                        <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          aria-label="Activer la connexion par empreinte digitale"
+                        />
                         <span className="ml-3 text-sm text-gray-700">Connexion par empreinte digitale</span>
                       </label>
                     </div>
@@ -248,7 +268,10 @@ const Settings: React.FC = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Longueur minimale
                         </label>
-                        <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <select 
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          aria-label="Sélectionner une langue"
+                        >
                           <option>8 caractères</option>
                           <option>10 caractères</option>
                           <option>12 caractères</option>
@@ -256,12 +279,22 @@ const Settings: React.FC = () => {
                       </div>
                       
                       <label className="flex items-center">
-                        <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          defaultChecked 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          aria-label="Activer les caractères spéciaux obligatoires"
+                        />
                         <span className="ml-3 text-sm text-gray-700">Caractères spéciaux obligatoires</span>
                       </label>
                       
                       <label className="flex items-center">
-                        <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          defaultChecked 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          aria-label="Activer le renouvellement des mots de passe tous les 90 jours"
+                        />
                         <span className="ml-3 text-sm text-gray-700">Renouvellement tous les 90 jours</span>
                       </label>
                     </div>
@@ -271,10 +304,16 @@ const Settings: React.FC = () => {
                 <div className="bg-red-50 border border-red-200 rounded-xl p-6">
                   <h3 className="text-lg font-medium text-red-900 mb-4">Zone de danger</h3>
                   <div className="space-y-3">
-                    <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    <button 
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                      aria-label="Réinitialiser tous les mots de passe utilisateur"
+                    >
                       Réinitialiser tous les mots de passe
                     </button>
-                    <button className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 ml-3">
+                    <button 
+                      className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 ml-3"
+                      aria-label="Exporter les journaux de sécurité"
+                    >
                       Exporter les logs de sécurité
                     </button>
                   </div>
@@ -293,22 +332,41 @@ const Settings: React.FC = () => {
                     <div className="space-y-3">
                       <label className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">Nouvelles inscriptions</span>
-                        <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          defaultChecked 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          aria-label="Activer les notifications pour les nouvelles inscriptions"
+                        />
                       </label>
                       
                       <label className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">Paiements reçus</span>
-                        <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          defaultChecked 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          aria-label="Activer les notifications pour les paiements reçus"
+                        />
                       </label>
                       
                       <label className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">Absences non justifiées</span>
-                        <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          defaultChecked 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          aria-label="Activer les notifications pour les absences non justifiées"
+                        />
                       </label>
                       
                       <label className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">Incidents disciplinaires</span>
-                        <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          aria-label="Activer les notifications pour les incidents disciplinaires"
+                        />
                       </label>
                     </div>
                   </div>
@@ -319,22 +377,40 @@ const Settings: React.FC = () => {
                     <div className="space-y-3">
                       <label className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">Email</span>
-                        <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          defaultChecked 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          aria-label="Activer les notifications par email"
+                        />
                       </label>
                       
                       <label className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">SMS</span>
-                        <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          defaultChecked 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          aria-label="Activer les notifications par SMS"
+                        />
                       </label>
                       
                       <label className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">Notifications push</span>
-                        <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          aria-label="Activer les notifications push"
+                        />
                       </label>
                       
                       <label className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">Slack/Teams</span>
-                        <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          aria-label="Activer les notifications via Slack ou Teams"
+                        />
                       </label>
                     </div>
                   </div>
@@ -353,7 +429,10 @@ const Settings: React.FC = () => {
                       <p className="text-sm text-gray-600">Jusqu'à 500 élèves • Tous les modules inclus</p>
                       <p className="text-2xl font-bold text-blue-600 mt-2">79€/mois</p>
                     </div>
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <button 
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      aria-label="Modifier l'abonnement actuel"
+                    >
                       Changer de plan
                     </button>
                   </div>
@@ -372,6 +451,7 @@ const Settings: React.FC = () => {
                           type="text"
                           defaultValue="École Exemple"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          aria-label="Nom pour la facturation"
                         />
                       </div>
                       
@@ -383,6 +463,7 @@ const Settings: React.FC = () => {
                           rows={3}
                           defaultValue="123 Rue de l'Éducation, 75001 Paris, France"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          aria-label="Adresse de facturation"
                         />
                       </div>
                     </div>
@@ -412,19 +493,19 @@ const Settings: React.FC = () => {
                   <h3 className="text-lg font-medium text-gray-900">Historique des factures</h3>
                   
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full" aria-label="Historique des factures">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Date
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Montant
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Statut
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Actions
                           </th>
                         </tr>
@@ -439,7 +520,10 @@ const Settings: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button className="text-blue-600 hover:text-blue-900">
+                            <button 
+                              className="text-blue-600 hover:text-blue-900"
+                              aria-label="Télécharger la facture du 01/01/2024"
+                            >
                               <Download className="w-4 h-4" />
                             </button>
                           </td>
@@ -510,16 +594,24 @@ const Settings: React.FC = () => {
                   <h3 className="text-lg font-medium text-yellow-900 mb-4">Rétention des données</h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-yellow-800">Données élèves archivées</span>
-                      <select className="px-3 py-1 border border-yellow-300 rounded text-sm">
+                      <span className="text-sm text-yellow-800" id="student-data-retention-label">Données élèves archivées</span>
+                      <select 
+                        className="px-3 py-1 border border-yellow-300 rounded text-sm"
+                        aria-labelledby="student-data-retention-label"
+                        aria-label="Durée de rétention des données élèves"
+                      >
                         <option>7 ans</option>
                         <option>10 ans</option>
                         <option>Permanent</option>
                       </select>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-yellow-800">Logs système</span>
-                      <select className="px-3 py-1 border border-yellow-300 rounded text-sm">
+                      <span className="text-sm text-yellow-800" id="system-logs-retention-label">Logs système</span>
+                      <select 
+                        className="px-3 py-1 border border-yellow-300 rounded text-sm"
+                        aria-labelledby="system-logs-retention-label"
+                        aria-label="Durée de rétention des logs système"
+                      >
                         <option>1 an</option>
                         <option>2 ans</option>
                         <option>5 ans</option>
@@ -543,7 +635,10 @@ const Settings: React.FC = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Langue
                         </label>
-                        <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <select 
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          aria-label="Sélectionner une langue"
+                        >
                           <option>Français</option>
                           <option>English</option>
                           <option>Español</option>
@@ -555,7 +650,10 @@ const Settings: React.FC = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Fuseau horaire
                         </label>
-                        <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <select 
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          aria-label="Sélectionner une langue"
+                        >
                           <option>Europe/Paris (UTC+1)</option>
                           <option>Europe/London (UTC+0)</option>
                           <option>America/New_York (UTC-5)</option>
@@ -566,7 +664,10 @@ const Settings: React.FC = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Format de date
                         </label>
-                        <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <select 
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          aria-label="Sélectionner une langue"
+                        >
                           <option>DD/MM/YYYY</option>
                           <option>MM/DD/YYYY</option>
                           <option>YYYY-MM-DD</option>

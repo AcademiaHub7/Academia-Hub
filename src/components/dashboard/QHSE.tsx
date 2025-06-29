@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import ProgressBarDynamic from '../ui/ProgressBarDynamic';
+import './QHSE.css';
 import { 
   Shield, 
   Plus, 
@@ -8,15 +10,12 @@ import {
   Users,
   AlertTriangle,
   CheckCircle,
-  Settings,
   Leaf,
   FileText,
-  Clock,
   Activity,
   Eye,
   Edit,
   Download,
-  Upload,
   BarChart3,
   TrendingUp,
   Zap,
@@ -24,7 +23,6 @@ import {
   Brain,
   Thermometer,
   Droplet,
-  Wind,
   Trash2,
   Flame,
   Lightbulb,
@@ -32,7 +30,10 @@ import {
   Award,
   PieChart,
   LineChart,
-  Gauge
+  Gauge,
+  Send,
+  User,
+  UtensilsCrossed
 } from 'lucide-react';
 
 const QHSE: React.FC = () => {
@@ -596,16 +597,18 @@ const QHSE: React.FC = () => {
 
               {/* Indicateurs de qualité */}
               <div className="grid lg:grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <div className="stats-card">
                   <div className="flex items-center justify-between mb-4">
-                    <h5 className="font-medium text-gray-900">Satisfaction</h5>
+                    <h5 className="font-medium text-gray-900 dark:text-white">Satisfaction</h5>
                     <Award className="w-5 h-5 text-blue-600" />
                   </div>
                   <p className="text-3xl font-bold text-blue-600">94%</p>
-                  <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '94%' }}></div>
+                  <div className="mt-2">
+                    <div className="progress-bar satisfaction-progress">
+                      <div className="progress-bar-fill"></div>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-600 mt-2">Basé sur 450 retours</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Basé sur 450 retours</p>
                 </div>
 
                 <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
@@ -623,14 +626,16 @@ const QHSE: React.FC = () => {
                   <p className="text-sm text-gray-600 mt-2">2 majeures, 6 mineures</p>
                 </div>
 
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <div className="stats-card">
                   <div className="flex items-center justify-between mb-4">
-                    <h5 className="font-medium text-gray-900">Actions correctives</h5>
+                    <h5 className="font-medium text-gray-900 dark:text-white">Actions correctives</h5>
                     <CheckCircle className="w-5 h-5 text-green-600" />
                   </div>
                   <p className="text-3xl font-bold text-green-600">12/15</p>
-                  <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-600 h-2 rounded-full" style={{ width: '80%' }}></div>
+                  <div className="mt-2">
+                    <div className="progress-bar corrective-actions-progress">
+                      <div className="progress-bar-fill"></div>
+                    </div>
                   </div>
                   <p className="text-sm text-gray-600 mt-2">80% complétées</p>
                 </div>
@@ -672,9 +677,9 @@ const QHSE: React.FC = () => {
                           M. Dubois
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                              <div className="bg-green-600 h-2 rounded-full" style={{ width: '95%' }}></div>
+                          <div className="table-progress progress-95">
+                            <div className="table-progress-bar">
+                              <div className="table-progress-fill"></div>
                             </div>
                             <span className="text-sm font-medium text-gray-900">95%</span>
                           </div>
@@ -696,9 +701,9 @@ const QHSE: React.FC = () => {
                           Mme Martin
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                              <div className="bg-blue-600 h-2 rounded-full" style={{ width: '88%' }}></div>
+                          <div className="table-progress progress-88">
+                            <div className="table-progress-bar">
+                              <div className="table-progress-fill bg-blue-600"></div>
                             </div>
                             <span className="text-sm font-medium text-gray-900">88%</span>
                           </div>
@@ -720,9 +725,9 @@ const QHSE: React.FC = () => {
                           M. Bernard
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                              <div className="bg-yellow-600 h-2 rounded-full" style={{ width: '75%' }}></div>
+                          <div className="table-progress progress-75">
+                            <div className="table-progress-bar">
+                              <div className="table-progress-fill bg-yellow-600"></div>
                             </div>
                             <span className="text-sm font-medium text-gray-900">75%</span>
                           </div>
@@ -1125,8 +1130,8 @@ const QHSE: React.FC = () => {
                         <p className="text-sm text-gray-600">Personnel formé: 15/45</p>
                       </div>
                       <div className="text-right">
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div className="bg-blue-600 h-2 rounded-full" style={{ width: '33%' }}></div>
+                        <div className="w-20 bg-gray-200 rounded-full h-2 overflow-hidden">
+                          <div className="h-2 rounded-full progress-bar-blue progress-33"></div>
                         </div>
                         <p className="text-sm text-blue-600 mt-1">33%</p>
                       </div>
@@ -1138,7 +1143,7 @@ const QHSE: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div className="bg-blue-600 h-2 rounded-full" style={{ width: '62%' }}></div>
+                          <div className="h-2 rounded-full progress-bar-blue progress-62"></div>
                         </div>
                         <p className="text-sm text-blue-600 mt-1">62%</p>
                       </div>
@@ -1297,8 +1302,8 @@ const QHSE: React.FC = () => {
                           <span className="text-gray-600">Électricité</span>
                           <span className="font-medium">1.7 tonnes</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-blue-600 h-2 rounded-full" style={{ width: '60%' }}></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                          <div className="h-2 rounded-full progress-bar-blue progress-60"></div>
                         </div>
                       </div>
                       <div>
@@ -1306,8 +1311,8 @@ const QHSE: React.FC = () => {
                           <span className="text-gray-600">Transport</span>
                           <span className="font-medium">0.8 tonnes</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-purple-600 h-2 rounded-full" style={{ width: '30%' }}></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                          <div className="h-2 rounded-full progress-bar-purple progress-30"></div>
                         </div>
                       </div>
                       <div>
@@ -1315,8 +1320,8 @@ const QHSE: React.FC = () => {
                           <span className="text-gray-600">Chauffage</span>
                           <span className="font-medium">0.3 tonnes</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-red-600 h-2 rounded-full" style={{ width: '10%' }}></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                          <div className="h-2 rounded-full progress-bar-red progress-10"></div>
                         </div>
                       </div>
                     </div>
@@ -1327,8 +1332,8 @@ const QHSE: React.FC = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Objectif annuel</span>
                         <div className="flex items-center">
-                          <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
-                            <div className="bg-green-600 h-2 rounded-full" style={{ width: '65%' }}></div>
+                          <div className="w-20 bg-gray-200 rounded-full h-2 mr-2 overflow-hidden">
+                            <div className="h-2 rounded-full progress-bar-green progress-65"></div>
                           </div>
                           <span className="text-sm font-medium">65%</span>
                         </div>
@@ -1455,8 +1460,8 @@ const QHSE: React.FC = () => {
                         <span className="text-gray-600">Réduction consommation électrique</span>
                         <span className="font-medium text-green-600">-15% d'ici fin 2024</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '45%' }}></div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div className="h-2 rounded-full progress-bar-green progress-45"></div>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">Progression: 45%</p>
                     </div>
@@ -1465,8 +1470,8 @@ const QHSE: React.FC = () => {
                         <span className="text-gray-600">Réduction consommation d'eau</span>
                         <span className="font-medium text-blue-600">-20% d'ici fin 2024</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: '35%' }}></div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div className="h-2 rounded-full progress-bar-blue progress-35"></div>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">Progression: 35%</p>
                     </div>
@@ -1475,8 +1480,8 @@ const QHSE: React.FC = () => {
                         <span className="text-gray-600">Augmentation taux de recyclage</span>
                         <span className="font-medium text-amber-600">75% d'ici fin 2024</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-amber-600 h-2 rounded-full" style={{ width: '60%' }}></div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div className="h-2 rounded-full progress-bar-amber progress-60"></div>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">Progression: 60%</p>
                     </div>
@@ -1549,13 +1554,25 @@ const QHSE: React.FC = () => {
                              incident.status === 'in-progress' ? 'En cours' : 'En attente'}
                           </span>
                           <div className="flex space-x-2 mt-3">
-                            <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
+                            <button 
+                              className="action-button view-button"
+                              aria-label="Voir les détails"
+                              title="Voir les détails"
+                            >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                            <button 
+                              className="action-button edit-button"
+                              aria-label="Modifier"
+                              title="Modifier"
+                            >
                               <Edit className="w-4 h-4" />
                             </button>
-                            <button className="p-2 text-green-600 hover:bg-green-100 rounded-lg">
+                            <button 
+                              className="action-button approve-button"
+                              aria-label="Approuver"
+                              title="Approuver"
+                            >
                               <CheckCircle className="w-4 h-4" />
                             </button>
                           </div>
@@ -1710,13 +1727,25 @@ const QHSE: React.FC = () => {
                              audit.status === 'scheduled' ? 'Planifié' : 'Annulé'}
                           </span>
                           <div className="flex space-x-2 mt-3">
-                            <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
+                            <button 
+                              className="action-button view-button"
+                              aria-label="Voir les détails"
+                              title="Voir les détails"
+                            >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                            <button 
+                              className="action-button edit-button"
+                              aria-label="Modifier"
+                              title="Modifier"
+                            >
                               <Edit className="w-4 h-4" />
                             </button>
-                            <button className="p-2 text-green-600 hover:bg-green-100 rounded-lg">
+                            <button 
+                              className="action-button download-button"
+                              aria-label="Télécharger"
+                              title="Télécharger"
+                            >
                               <Download className="w-4 h-4" />
                             </button>
                           </div>
@@ -1740,8 +1769,8 @@ const QHSE: React.FC = () => {
                         <span className="text-gray-600">Qualité</span>
                         <span className="font-medium">94%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: '94%' }}></div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div className="h-2 rounded-full progress-bar-blue progress-94"></div>
                       </div>
                     </div>
                     <div>
@@ -1749,8 +1778,8 @@ const QHSE: React.FC = () => {
                         <span className="text-gray-600">Hygiène</span>
                         <span className="font-medium">92%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-cyan-600 h-2 rounded-full" style={{ width: '92%' }}></div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div className="h-2 rounded-full progress-bar-cyan progress-92"></div>
                       </div>
                     </div>
                     <div>
@@ -1758,8 +1787,8 @@ const QHSE: React.FC = () => {
                         <span className="text-gray-600">Sécurité</span>
                         <span className="font-medium">85%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-red-600 h-2 rounded-full" style={{ width: '85%' }}></div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div className="h-2 rounded-full progress-bar-red progress-85"></div>
                       </div>
                     </div>
                     <div>
@@ -1767,8 +1796,8 @@ const QHSE: React.FC = () => {
                         <span className="text-gray-600">Environnement</span>
                         <span className="font-medium">88%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '88%' }}></div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div className="h-2 rounded-full progress-bar-green progress-88"></div>
                       </div>
                     </div>
                   </div>
@@ -1851,10 +1880,11 @@ const QHSE: React.FC = () => {
                           <div className="flex items-center">
                             <span className="text-sm text-gray-600 mr-2">Confiance:</span>
                             <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
-                              <div 
-                                className="bg-purple-600 h-2 rounded-full" 
-                                style={{ width: `${insight.confidence}%` }}
-                              ></div>
+                              <ProgressBarDynamic 
+                                value={insight.confidence} 
+                                color="purple" 
+                                className="w-full"
+                              />
                             </div>
                             <span className="text-sm font-medium text-purple-600">{insight.confidence}%</span>
                           </div>
@@ -1925,7 +1955,11 @@ const QHSE: React.FC = () => {
                     placeholder="Posez une question à l'assistant IA..."
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700">
+                  <button 
+                    className="send-button"
+                    aria-label="Envoyer la question"
+                    title="Envoyer la question"
+                  >
                     <Send className="w-4 h-4" />
                   </button>
                 </div>

@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import FormModal from './FormModal';
-import { FileText, Download, Printer, Send, Star } from 'lucide-react';
+import { Download, Printer, Send } from 'lucide-react';
+
+interface StudentData {
+  id?: string;
+  name?: string;
+  class?: string;
+}
 
 interface ReportCardModalProps {
   isOpen: boolean;
   onClose: () => void;
-  studentData: any;
+  studentData: StudentData;
 }
 
 const ReportCardModal: React.FC<ReportCardModalProps> = ({
@@ -64,12 +70,12 @@ const ReportCardModal: React.FC<ReportCardModalProps> = ({
     }
   };
 
-  // Calcul de la moyenne générale pondérée
-  const calculateWeightedAverage = () => {
-    const totalPoints = reportCardData.grades.reduce((sum, subject) => sum + (subject.grade * subject.coefficient), 0);
-    const totalCoefficients = reportCardData.grades.reduce((sum, subject) => sum + subject.coefficient, 0);
-    return (totalPoints / totalCoefficients).toFixed(2);
-  };
+  // Calcul de la moyenne générale pondérée (commenté car non utilisé mais conservé pour référence)
+  // const calculateWeightedAverage = () => {
+  //   const totalPoints = reportCardData.grades.reduce((sum, subject) => sum + (subject.grade * subject.coefficient), 0);
+  //   const totalCoefficients = reportCardData.grades.reduce((sum, subject) => sum + subject.coefficient, 0);
+  //   return (totalPoints / totalCoefficients).toFixed(2);
+  // };
 
   // Obtenir l'appréciation générale
   const generalAppreciation = getAppreciation(reportCardData.summary.generalAverage);
@@ -303,36 +309,23 @@ const ReportCardModal: React.FC<ReportCardModalProps> = ({
         <div className="space-y-6">
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
             <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Options du bulletin</h4>
-            
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="period-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Période
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <select 
+                  id="period-select"
+                  aria-label="Sélectionner la période"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
                   <option value="trimester1">1er Trimestre</option>
                   <option value="trimester2">2ème Trimestre</option>
                   <option value="trimester3">3ème Trimestre</option>
                   <option value="annual">Annuel</option>
                 </select>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Format du bulletin
-                </label>
-                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                  <option value="standard">Standard</option>
-                  <option value="detailed">Détaillé</option>
-                  <option value="simplified">Simplifié</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Inclure
-                </label>
-                <div className="space-y-2">
+              <div className="space-y-2">
                   <label className="flex items-center">
                     <input type="checkbox" checked className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700" />
                     <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Graphiques de progression</span>
@@ -368,17 +361,20 @@ const ReportCardModal: React.FC<ReportCardModalProps> = ({
                 </div>
               </div>
             </div>
-          </div>
-          
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-            <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Options d'envoi</h4>
+            
+            <div className="mt-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+              <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Options d'envoi</h4>
             
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Méthode d'envoi
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <select 
+                  id="delivery-method"
+                  aria-label="Méthode d'envoi"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
                   <option value="email">Email</option>
                   <option value="sms">SMS (lien)</option>
                   <option value="portal">Portail parents</option>
@@ -391,10 +387,13 @@ const ReportCardModal: React.FC<ReportCardModalProps> = ({
                   Message d'accompagnement
                 </label>
                 <textarea 
+                  id="message"
+                  name="message"
                   rows={3}
+                  aria-label="Message d'accompagnement"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   defaultValue="Chers parents, veuillez trouver ci-joint le bulletin de notes de votre enfant pour le 1er trimestre de l'année scolaire 2023-2024. N'hésitez pas à prendre rendez-vous avec le professeur principal pour en discuter."
-                />
+                ></textarea>
               </div>
               
               <div>
