@@ -24,7 +24,7 @@ import LoadingPage from './components/loading/LoadingPage';
 // Styles pour les composants de paiement et KYC
 import './styles/payment-kyc.css';
 
-import ExamTrack from './components/examtrack/ExamTrack';
+import ExamTrack from './modules/examtrack';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);

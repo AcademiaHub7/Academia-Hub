@@ -6,8 +6,5 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     exclude: ['lucide-react'],
-    esbuildOptions: {
-      resolveExtensions: ['.js', '.mjs', '.ts', '.tsx', '.json'],
-    },
   },
 });

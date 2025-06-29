@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import DatePicker from 'react-datepicker';
-import { format } from 'date-fns';
+// Import specific function directly to avoid ESM resolution issues
+import format from 'date-fns/format';
 import 'react-datepicker/dist/react-datepicker.css';
 
 interface MonthPickerProps {
