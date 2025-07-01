@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
@@ -24,7 +24,10 @@ import LoadingPage from './components/loading/LoadingPage';
 // Styles pour les composants de paiement et KYC
 import './styles/payment-kyc.css';
 
-import ExamTrack from './modules/examtrack';
+// Import du module ExamTrack depuis le bon chemin
+import ExamTrack from './examtrack/ExamTrack';
+// Désactiver l'ancienne version pour éviter les conflits
+// import ExamTrackOld from './components/examtrack/ExamTrack';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -77,7 +80,13 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/subscription" element={<Subscription />} />
                 <Route path="/dashboard/*" element={<Dashboard />} />
-                <Route path="/examtrack/*" element={<ExamTrack />} />
+                
+                {/* Route pour le module ExamTrack */}
+                <Route path="/examtrack/*" element={
+                  <div className="examtrack-module">
+                    <ExamTrack />
+                  </div>
+                } />
                 
                 {/* Nouvelles routes d'inscription école */}
                 <Route path="/register/school" element={<SchoolRegistrationForm />} />
@@ -88,6 +97,9 @@ function App() {
                 
                 {/* Routes imbriquées pour le processus d'inscription */}
                 <Route path="/register/*" element={<RegistrationRoutes />} />
+                
+                {/* Route de secours pour les chemins non trouvés */}
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </div>
           </Router>

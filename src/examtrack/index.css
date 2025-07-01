@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #10b981; /* Emerald-500 - couleur principale */
+}
+
+.from-primary-color {
+  --tw-gradient-from: var(--primary-color);
+}
+
+.to-primary-color {
+  --tw-gradient-to: var(--primary-color);
+}
+
+.text-primary-color {
+  color: var(--primary-color);
+}
+
+.bg-primary-color {
+  background-color: var(--primary-color);
+}
+
+.border-primary-color {
+  border-color: var(--primary-color);
+}
+
+.examtrack-container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
