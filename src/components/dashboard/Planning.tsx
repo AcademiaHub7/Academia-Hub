@@ -27,7 +27,11 @@ import {
   TeacherAvailabilityModal, 
   WorkHoursModal,
   ConfirmModal,
-  AlertModal
+  AlertModal,
+  RoomManagementModal,
+  RoomMaintenanceModal,
+  ResourcePlanningModal,
+  ClassStudentAssignmentModal
 } from '../modals';
 
 const Planning: React.FC = () => {
@@ -42,10 +46,30 @@ const Planning: React.FC = () => {
   const [isWorkHoursModalOpen, setIsWorkHoursModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [isRoomManagementModalOpen, setIsRoomManagementModalOpen] = useState(false);
+  const [isRoomMaintenanceModalOpen, setIsRoomMaintenanceModalOpen] = useState(false);
+  const [isResourcePlanningModalOpen, setIsResourcePlanningModalOpen] = useState(false);
+  const [isClassStudentAssignmentModalOpen, setIsClassStudentAssignmentModalOpen] = useState(false);
   
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedResourceForPlanning, setSelectedResourceForPlanning] = useState<any>(null);
+  const [selectedClassForAssignment, setSelectedClassForAssignment] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [alertMessage, setAlertMessage] = useState({ title: '', message: '', type: 'success' as 'success' | 'error' | 'info' | 'warning' });
+
+  // Données factices pour les élèves
+  const studentsData = [
+    { id: 'STD001', firstName: 'Jean', lastName: 'Dupont', classId: 'CLS001', status: 'active' },
+    { id: 'STD002', firstName: 'Marie', lastName: 'Martin', classId: 'CLS001', status: 'active' },
+    { id: 'STD003', firstName: 'Lucas', lastName: 'Bernard', classId: 'CLS002', status: 'active' },
+    { id: 'STD004', firstName: 'Emma', lastName: 'Petit', classId: 'CLS002', status: 'active' },
+    { id: 'STD005', firstName: 'Thomas', lastName: 'Robert', classId: 'CLS003', status: 'active' },
+    { id: 'STD006', firstName: 'Léa', lastName: 'Richard', classId: null, status: 'active' },
+    { id: 'STD007', firstName: 'Hugo', lastName: 'Moreau', classId: null, status: 'active' },
+    { id: 'STD008', firstName: 'Chloé', lastName: 'Simon', classId: null, status: 'active' },
+    { id: 'STD009', firstName: 'Nathan', lastName: 'Laurent', classId: null, status: 'active' },
+    { id: 'STD010', firstName: 'Camille', lastName: 'Michel', classId: null, status: 'active' },
+  ];
 
   const classesData = [
     {
@@ -253,6 +277,54 @@ const Planning: React.FC = () => {
     setIsWorkHoursModalOpen(true);
   };
 
+  const handleManageRooms = () => {
+    setIsRoomManagementModalOpen(true);
+  };
+
+  const handleMaintenanceClick = () => {
+    if (resourcesData.length === 0) {
+      setAlertMessage({
+        title: 'Aucune salle disponible',
+        message: 'Veuillez d\'abord ajouter des salles avant de planifier une maintenance.',
+        type: 'warning'
+      });
+      setIsAlertModalOpen(true);
+      return;
+    }
+    setIsRoomMaintenanceModalOpen(true);
+  };
+
+  const handleOpenResourcePlanning = (resource: any = null) => {
+    setSelectedResourceForPlanning(resource);
+    setIsResourcePlanningModalOpen(true);
+  };
+
+  const handleAssignStudents = (classItem: any) => {
+    console.log('1. handleAssignStudents appelé avec:', classItem);
+    
+    // Vérifier que studentsData est défini
+    console.log('2. studentsData:', studentsData);
+    
+    // Filtrer les élèves actuels
+    const currentStudents = studentsData.filter(student => student.classId === classItem.id);
+    console.log('3. Élèves actuels de la classe:', currentStudents);
+    
+    // Mettre à jour l'état avec les informations de la classe
+    setSelectedClassForAssignment({
+      id: classItem.id,
+      name: classItem.name,
+      level: classItem.level,
+      currentStudents: currentStudents
+    });
+    
+    console.log('4. selectedClassForAssignment mis à jour');
+    
+    // Ouvrir le modal
+    console.log('5. Ouverture du modal...');
+    setIsClassStudentAssignmentModalOpen(true);
+    console.log('6. isClassStudentAssignmentModalOpen:', true);
+  };
+
   const handleSaveClass = (classData: any) => {
     console.log('Saving class:', classData);
     setAlertMessage({
@@ -315,6 +387,55 @@ const Planning: React.FC = () => {
     setIsAlertModalOpen(true);
   };
 
+  const handleSaveRoom = (roomData: any) => {
+    console.log('Saving room:', roomData);
+    setAlertMessage({
+      title: 'Salle enregistrée',
+      message: `La salle "${roomData.name}" a été enregistrée avec succès.`,
+      type: 'success'
+    });
+    setIsAlertModalOpen(true);
+  };
+
+  const handleSaveMaintenance = (maintenanceData: any) => {
+    console.log('Saving maintenance:', maintenanceData);
+    setAlertMessage({
+      title: 'Maintenance planifiée',
+      message: `La maintenance pour la salle a été enregistrée avec succès.`,
+      type: 'success'
+    });
+    setIsAlertModalOpen(true);
+  };
+
+  const handleSaveResourcePlanning = (planningData: any) => {
+    console.log('Saving resource planning:', planningData);
+    setAlertMessage({
+      title: 'Planning enregistré',
+      message: 'Le planning a été mis à jour avec succès.',
+      type: 'success'
+    });
+    setIsAlertModalOpen(true);
+  };
+
+  const handleSaveStudentAssignments = (selectedStudentIds: string[]) => {
+    // Mettre à jour les données des élèves avec leur nouvelle classe
+    const updatedStudents = studentsData.map(student => ({
+      ...student,
+      classId: selectedStudentIds.includes(student.id) ? selectedClassForAssignment.id : student.classId
+    }));
+    
+    // Ici, vous devriez mettre à jour votre état ou votre base de données avec les nouvelles affectations
+    console.log('Mise à jour des affectations des élèves :', updatedStudents);
+    
+    // Afficher un message de confirmation
+    setAlertMessage({
+      title: 'Affectations enregistrées',
+      message: `Les affectations des élèves pour la classe ${selectedClassForAssignment.name} ont été mises à jour.`,
+      type: 'success'
+    });
+    setIsAlertModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -332,7 +453,7 @@ const Planning: React.FC = () => {
             Optimiser
           </button>
           <button 
-            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
+            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800"
             onClick={handleNewClass}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -455,7 +576,10 @@ const Planning: React.FC = () => {
                           >
                             Modifier
                           </button>
-                          <button className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-900/50">
+                          <button 
+                            className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-900/50"
+                            onClick={() => handleAssignStudents(classItem)}
+                          >
                             Affecter élèves
                           </button>
                         </div>
@@ -472,13 +596,31 @@ const Planning: React.FC = () => {
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Gestion des ressources</h3>
                 <div className="flex space-x-2">
-                  <button className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <button 
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={handleManageRooms}
+                  >
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Gérer les salles
+                  </button>
+                  <button 
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={handleMaintenanceClick}
+                  >
                     <Wrench className="w-4 h-4 mr-2" />
                     Maintenance
                   </button>
                   <button 
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={() => handleOpenResourcePlanning()}
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Planning
+                  </button>
+                  <button 
                     className="inline-flex items-center px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800"
                     onClick={handleNewReservation}
+                    disabled={resourcesData.length === 0}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Réserver une salle
@@ -513,12 +655,15 @@ const Planning: React.FC = () => {
                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{resource.nextReservation}</p>
                         <div className="flex space-x-2 mt-2">
                           <button 
-                            className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50"
-                            onClick={handleNewReservation}
+                            className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-800"
+                            onClick={() => handleNewReservation(resource)}
                           >
                             Réserver
                           </button>
-                          <button className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600">
+                          <button 
+                            className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+                            onClick={() => handleOpenResourcePlanning(resource)}
+                          >
                             Planning
                           </button>
                         </div>
@@ -865,6 +1010,54 @@ const Planning: React.FC = () => {
         message={alertMessage.message}
         type={alertMessage.type}
       />
+
+      <RoomManagementModal
+        isOpen={isRoomManagementModalOpen}
+        onClose={() => setIsRoomManagementModalOpen(false)}
+        onSave={handleSaveRoom}
+        rooms={resourcesData}
+      />
+
+      <RoomMaintenanceModal
+        isOpen={isRoomMaintenanceModalOpen}
+        onClose={() => setIsRoomMaintenanceModalOpen(false)}
+        onSave={handleSaveMaintenance}
+        rooms={resourcesData}
+      />
+
+      <ResourcePlanningModal
+        isOpen={isResourcePlanningModalOpen}
+        onClose={() => {
+          setIsResourcePlanningModalOpen(false);
+          setSelectedResourceForPlanning(null);
+        }}
+        onSave={handleSaveResourcePlanning}
+        resource={selectedResourceForPlanning}
+      />
+
+      {selectedClassForAssignment && (
+        <>
+          {console.log('7. Rendu du modal avec selectedClassForAssignment:', selectedClassForAssignment)}
+          <ClassStudentAssignmentModal
+            isOpen={isClassStudentAssignmentModalOpen}
+            onClose={() => {
+              console.log('8. Fermeture du modal');
+              setIsClassStudentAssignmentModalOpen(false);
+            }}
+            onSave={(selectedStudents) => {
+              console.log('9. Élèves sélectionnés:', selectedStudents);
+              handleSaveStudentAssignments(selectedStudents);
+            }}
+            classInfo={{
+              id: selectedClassForAssignment.id,
+              name: selectedClassForAssignment.name,
+              level: selectedClassForAssignment.level,
+              currentStudents: selectedClassForAssignment.currentStudents || []
+            }}
+            allStudents={studentsData}
+          />
+        </>
+      )}
     </div>
   );
 };

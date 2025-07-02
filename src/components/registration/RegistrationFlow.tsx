@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+// Importation des composants d'animation pour les transitions fluides
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -99,9 +100,16 @@ const pageVariants = {
 };
 
 /**
+ * Props du composant RegistrationFlow
+ */
+interface RegistrationFlowProps {
+  initialStep?: string;
+}
+
+/**
  * Composant principal du flux d'inscription
  */
-const RegistrationFlow: React.FC = () => {
+const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ initialStep }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -113,6 +121,45 @@ const RegistrationFlow: React.FC = () => {
   const [direction, setDirection] = useState<number>(0);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saving' | 'saved' | 'error' | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    // Si initialStep est fourni, trouver l'index correspondant
+    if (initialStep) {
+      const stepIndex = STEPS.findIndex(step => step.id === initialStep);
+      if (stepIndex !== -1) {
+        setCurrentStepIndex(stepIndex);
+        return;
+      }
+    }
+    
+    // Sinon, déterminer l'étape en fonction des données de session
+    if (sessionData) {
+      // Logique pour déterminer l'étape actuelle en fonction des données de session
+      let newStepIndex = 0;
+      
+      // Vérifier l'état de la session pour déterminer l'étape appropriée
+      if (!sessionData.promoter?.email) {
+        newStepIndex = 0; // Landing ou Pre-registration
+      } else if (sessionData.promoter?.email && !sessionData.promoter?.emailVerified) {
+        newStepIndex = 2; // Email verification
+      } else if (sessionData.promoter?.emailVerified && !sessionData.school?.name) {
+        newStepIndex = 3; // Profile form
+      } else if (sessionData.school?.name && !sessionData.subscription?.planId) {
+        newStepIndex = 4; // Plan selection
+      } else if (sessionData.subscription?.planId && !sessionData.payment?.status) {
+        newStepIndex = 5; // Payment
+      } else if (sessionData.payment?.status === 'completed' && (!sessionData.kyc?.status || sessionData.kyc?.status === 'pending')) {
+        newStepIndex = 6; // KYC verification
+      } else if (sessionData.kyc?.status === 'verified' && !sessionData.activation?.status) {
+        newStepIndex = 7; // Activation
+      } else if (sessionData.activation?.status === 'activated') {
+        newStepIndex = 8; // Onboarding
+      }
+      
+      // Mettre à jour l'étape actuelle
+      setCurrentStepIndex(newStepIndex);
+    }
+  }, [sessionData, initialStep]);
 
   // Déterminer l'étape actuelle en fonction des données de session
   const determineStepFromSession = useCallback((session: RegistrationSession): number => {
@@ -277,18 +324,38 @@ const RegistrationFlow: React.FC = () => {
 
   // Initialisation de la session
   useEffect(() => {
+    let isMounted = true;
+    
     const initSession = async () => {
-      const searchParams = new URLSearchParams(location.search);
-      const sid = searchParams.get('session');
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const searchParams = new URLSearchParams(location.search);
+        const sid = searchParams.get('session') || localStorage.getItem('registration_session_id');
 
-      if (sid) {
-        await loadSessionData(sid);
-      } else {
-        await startNewSession();
+        if (sid) {
+          await loadSessionData(sid);
+        } else {
+          await startNewSession();
+        }
+      } catch (err) {
+        console.error('Erreur lors de l\'initialisation de la session:', err);
+        if (isMounted) {
+          setError('Impossible de démarrer la session d\'inscription. Veuillez réessayer.');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     initSession();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [location.search, loadSessionData, startNewSession]);
 
   // Synchronisation de l'URL avec l'étape actuelle
@@ -360,136 +427,238 @@ const RegistrationFlow: React.FC = () => {
 
   // Navigation vers l'étape suivante
   const goToNextStep = useCallback(async () => {
-    // Vérifier si l'étape actuelle est valide
-    const isValid = await validateCurrentStep();
-    
-    if (!isValid) {
-      toast.error('Veuillez corriger les erreurs avant de continuer');
-      return;
+    try {
+      setLoading(true);
+      
+      // Valider l'étape actuelle avant de continuer
+      const isValid = await validateCurrentStep();
+      
+      if (!isValid) {
+        toast.error('Veuillez corriger les erreurs avant de continuer.');
+        return;
+      }
+      
+      // Ajouter un effet visuel de progression
+      toast.success(`Étape ${currentStepIndex + 1} complétée avec succès!`);
+      
+      setDirection(1); // Animation vers la droite
+      setCurrentStepIndex(prev => Math.min(prev + 1, STEPS.length - 1));
+    } catch (error) {
+      console.error('Erreur lors du passage à l\'étape suivante:', error);
+      toast.error('Une erreur est survenue. Veuillez réessayer.');
+    } finally {
+      setLoading(false);
     }
-    
-    // Si c'est la dernière étape, finaliser l'inscription
-    if (currentStepIndex >= STEPS.length - 1) {
-      // Logique de finalisation...
-      return;
-    }
-    
-    setDirection(1);
-    setCurrentStepIndex((prev: number) => prev + 1);
-    
-    // Sauvegarder l'étape actuelle
-    if (sessionData) {
+  }, [validateCurrentStep, currentStepIndex]);
+
+// Navigation vers l'étape précédente
+const goToPreviousStep = useCallback(() => {
+  try {
+    setDirection(-1); // Animation vers la gauche
+    setCurrentStepIndex(prev => Math.max(prev - 1, 0));
+  } catch (error) {
+    console.error('Erreur lors du passage à l\'étape précédente:', error);
+    toast.error('Une erreur est survenue. Veuillez réessayer.');
+  }
+}, []);
+
+// Sauvegarder l'étape actuelle
+const saveCurrentStep = useCallback(() => {
+  if (sessionData) {
+    // Mise à jour du statut en fonction de l'étape actuelle
+    setSessionData((prev: RegistrationSession | null) => {
+      if (!prev) return null;
       // Mise à jour du statut en fonction de l'étape actuelle
-      setSessionData((prev: RegistrationSession | null) => {
-        if (!prev) return null;
-        // Mise à jour du statut en fonction de l'étape actuelle
-        const updatedSession: RegistrationSession = { 
-          ...prev, 
-          status: currentStepIndex === STEPS.length - 1 ? 'completed' : 'pending',
-          updatedAt: new Date().toISOString()
-        };
-        return updatedSession;
-      });
-    }
-  }, [currentStepIndex, sessionData, validateCurrentStep]);
+      const updatedSession: RegistrationSession = { 
+        ...prev, 
+        status: currentStepIndex === STEPS.length - 1 ? 'completed' : 'pending',
+        updatedAt: new Date().toISOString()
+      };
+      return updatedSession;
+    });
+  }
+}, [sessionData, currentStepIndex]);
 
-  // Navigation vers l'étape précédente
-  const goToPreviousStep = useCallback(() => {
-    if (currentStepIndex <= 0) return;
-    
-    setDirection(-1);
-    setCurrentStepIndex((prev: number) => prev - 1);
-  }, [currentStepIndex]);
+// Appel de saveCurrentStep lors des changements d'étape
+useEffect(() => {
+  if (sessionData) {
+    saveCurrentStep();
+  }
+}, [currentStepIndex, saveCurrentStep, sessionData]);
 
-  // Rendu du composant de l'étape actuelle
-  const renderCurrentStep = useCallback(() => {
-    const currentStep = STEPS[currentStepIndex];
-    const CurrentStepComponent = currentStep.component;
-
+// Rendu de l'étape actuelle
+const renderCurrentStep = () => {
+  if (loading) {
     return (
+      <div className="flex flex-col items-center justify-center p-8 h-64">
+        <div className="spinner"></div>
+        <p className="mt-4 text-gray-600 font-medium">Chargement de votre session...</p>
+      </div>
+    );
+  }
+  
+  const CurrentStepComponent = STEPS[currentStepIndex].component;
+  
+  return (
+    <div className="p-6 flex-1 overflow-y-auto">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        {STEPS[currentStepIndex].name}
+        <span className="ml-2 text-sm font-normal text-gray-500">
+          (Temps estimé: {STEPS[currentStepIndex].timeEstimate})
+        </span>
+      </h2>
+      
       <Suspense fallback={<LoadingFallback />}>
-        <CurrentStepComponent
-          sessionData={sessionData}
+        <CurrentStepComponent 
+          sessionData={sessionData} 
           updateSessionData={updateSessionData}
           goToNextStep={goToNextStep}
           goToPreviousStep={goToPreviousStep}
           validationErrors={validationErrors}
-          setValidationErrors={setValidationErrors}
-          saveSession={saveSessionData}
         />
       </Suspense>
-    );
-  }, [currentStepIndex, sessionData, updateSessionData, goToNextStep, goToPreviousStep, validationErrors, setValidationErrors, saveSessionData]);
+    </div>
+  );
+};
 
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="spinner" />
-      </div>
-    );
-  }
+  // Fonction pour naviguer directement à une étape spécifique
+  const navigateToStep = (index: number) => {
+    // Ne permettre que de revenir en arrière ou d'aller à l'étape suivante
+    if (index <= currentStepIndex + 1 && index >= 0 && index < STEPS.length) {
+      setDirection(index > currentStepIndex ? 1 : -1);
+      setCurrentStepIndex(index);
+    }
+  };
 
   if (error) {
     return (
-      <div className="error-container">
-        <h2>Erreur</h2>
-        <p>{error}</p>
-        <button onClick={startNewSession}>
-          Réessayer
-        </button>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6 text-center">
+        <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+          <div className="text-red-500 mb-4 animate-pulse">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">Oups, une erreur est survenue</h2>
+          <p className="text-gray-600 mb-8">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 transform hover:-translate-y-1 shadow-lg"
+          >
+            Nouvelle tentative
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="registration-flow-container">
-      <ToastContainer position="top-right" autoClose={5000} />
+      <ToastContainer 
+        position="top-right" 
+        autoClose={5000} 
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
       
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentStepIndex}
-          variants={pageVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          custom={direction} // Utilisation de la direction pour les animations
-          className="registration-step-container"
-        >
-          {renderCurrentStep()}
-        </motion.div>
-      </AnimatePresence>
-
+      <header className="p-6 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center">
+          <img 
+            src="/logo.png" 
+            alt="Academia Hub Logo" 
+            className="h-10 w-auto mr-3" 
+            onError={(e) => {
+              // Fallback si l'image n'existe pas
+              e.currentTarget.src = 'https://via.placeholder.com/40x40?text=AH';
+            }}
+          />
+          <h1 className="text-xl font-bold text-gray-800">Academia Hub <span className="text-blue-600">Inscription</span></h1>
+        </div>
+        
+        <div className="text-sm text-gray-500">
+          Session ID: <span className="font-mono text-xs bg-gray-100 p-1 rounded">{sessionId?.substring(0, 8) || 'Non démarrée'}</span>
+        </div>
+      </header>
+      
       <div className="progress-bar">
         {STEPS.map((step, index) => (
           <div
             key={step.id}
             className={`step ${index <= currentStepIndex ? 'completed' : ''}`}
+            onClick={() => navigateToStep(index)}
+            title={`Étape ${index + 1}: ${step.name}`}
           >
             <span>{step.name}</span>
             <small>{step.timeEstimate}</small>
           </div>
         ))}
       </div>
+      
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={currentStepIndex}
+          custom={direction}
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="registration-step-container"
+        >
+          {renderCurrentStep()}
+        </motion.div>
+      </AnimatePresence>
+
       {/* Indicateur d'auto-sauvegarde */}
       {autoSaveStatus && (
         <div className={`auto-save-indicator ${autoSaveStatus}`}>
-          {autoSaveStatus === 'saving' && 'Sauvegarde en cours...'}
-          {autoSaveStatus === 'saved' && 'Modifications sauvegardées'}
-          {autoSaveStatus === 'error' && 'Erreur de sauvegarde'}
+          {autoSaveStatus === 'saving' && (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Sauvegarde en cours...
+            </>
+          )}
+          {autoSaveStatus === 'saved' && (
+            <>
+              <svg className="-ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Modifications sauvegardées
+            </>
+          )}
+          {autoSaveStatus === 'error' && (
+            <>
+              <svg className="-ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Erreur de sauvegarde
+            </>
+          )}
         </div>
       )}
       
       {/* Navigation */}
       <div className="registration-navigation">
-        {currentStepIndex > 0 && (
+        {currentStepIndex > 0 ? (
           <button 
             onClick={goToPreviousStep} 
             className="btn btn-outline-primary"
             disabled={loading}
           >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
             Précédent
           </button>
-        )}
+        ) : <div></div>}
         
         {currentStepIndex < STEPS.length - 1 && (
           <button 
@@ -497,7 +666,22 @@ const RegistrationFlow: React.FC = () => {
             className="btn btn-primary"
             disabled={loading}
           >
-            Suivant
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Traitement...
+              </>
+            ) : (
+              <>
+                Suivant
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </>
+            )}
           </button>
         )}
       </div>

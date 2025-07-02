@@ -41,6 +41,13 @@ const Finance: React.FC = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState({ title: '', message: '', type: 'success' as 'success' | 'error' | 'info' | 'warning' });
+  
+  // États pour le filtrage des frais
+  const [levelFilter, setLevelFilter] = useState('');
+  const [selectedYear, setSelectedYear] = useState('2024-2025');
+  const [selectedFeeType, setSelectedFeeType] = useState('');
+  const [showCustomFees, setShowCustomFees] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   // Selected item for edit/delete
   const [selectedItem, setSelectedItem] = useState<Record<string, unknown> | null>(null);
@@ -201,16 +208,87 @@ const Finance: React.FC = () => {
 
   // Données fictives pour les types de frais (pour les modals)
   const feeTypes = [
-    { id: 'FEE-001', name: 'Frais de scolarité', amount: 450 },
-    { id: 'FEE-002', name: 'Frais d\'inscription', amount: 380 },
-    { id: 'FEE-003', name: 'Frais de cantine', amount: 520 }
+    {
+      id: 'FEE-001',
+      name: 'Frais d\'inscription',
+      type: 'inscription',
+      amount: 380,
+      isAnnual: true,
+      isCustomizable: false,
+      description: 'Frais d\'inscription annuel'
+    },
+    {
+      id: 'FEE-002',
+      name: 'Frais de réinscription',
+      type: 'reinscription',
+      amount: 250,
+      isAnnual: true,
+      isCustomizable: false,
+      description: 'Frais de réinscription annuel'
+    },
+    {
+      id: 'FEE-003',
+      name: 'Frais de scolarité',
+      type: 'scolarite',
+      amount: 450,
+      isAnnual: true,
+      isCustomizable: true,
+      description: 'Frais de scolarité par trimestre',
+      paymentSchedule: {
+        periods: [
+          { id: 'P1', name: 'Trimestre 1', percentage: 33.33 },
+          { id: 'P2', name: 'Trimestre 2', percentage: 33.33 },
+          { id: 'P3', name: 'Trimestre 3', percentage: 33.34 }
+        ]
+      }
+    },
+    {
+      id: 'FEE-004',
+      name: 'Frais de cantine',
+      type: 'cantine',
+      amount: 520,
+      isAnnual: true,
+      isCustomizable: true,
+      description: 'Frais de cantine mensuel'
+    }
   ];
 
   // Données fictives pour les niveaux d'éducation (pour les modals)
   const educationLevels = [
-    { id: 'LVL-001', name: 'Primaire' },
-    { id: 'LVL-002', name: 'Collège' },
-    { id: 'LVL-003', name: 'Lycée' }
+    {
+      id: 'MAT',
+      name: 'Maternelle',
+      classes: [
+        { id: 'PS', name: 'Petite Section' },
+        { id: 'MS', name: 'Moyenne Section' },
+        { id: 'GS', name: 'Grande Section' }
+      ]
+    },
+    {
+      id: 'PRI',
+      name: 'Primaire',
+      classes: [
+        { id: 'CI', name: 'CI' },
+        { id: 'CP', name: 'CP' },
+        { id: 'CE1', name: 'CE1' },
+        { id: 'CE2', name: 'CE2' },
+        { id: 'CM1', name: 'CM1' },
+        { id: 'CM2', name: 'CM2' }
+      ]
+    },
+    {
+      id: 'SEC',
+      name: 'Secondaire',
+      classes: [
+        { id: '6EME', name: '6ème' },
+        { id: '5EME', name: '5ème' },
+        { id: '4EME', name: '4ème' },
+        { id: '3EME', name: '3ème' },
+        { id: '2ND', name: '2nde' },
+        { id: '1ERE', name: '1ère' },
+        { id: 'TLE', name: 'Terminale' }
+      ]
+    }
   ];
 
   // Données fictives pour les classes (pour les modals)
@@ -456,8 +534,8 @@ const Finance: React.FC = () => {
               { id: 'expenses', label: 'Dépenses', icon: Receipt },
               { id: 'closing', label: 'Clôture journée', icon: Calculator },
               { id: 'treasury', label: 'Trésorerie', icon: Wallet },
-              { id: 'hr', label: 'RH & Paie', icon: UserCheck },
-              { id: 'reports', label: 'Rapports', icon: FileText }
+              { id: 'reports', label: 'Rapports', icon: FileText },
+              { id: 'fees', label: 'Paramètrage frais', icon: FileText },
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -855,6 +933,206 @@ const Finance: React.FC = () => {
             </div>
           )}
 
+          {activeTab === 'fees' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">Configuration des frais</h3>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleNewFeeType}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Nouveau type de frais
+                  </button>
+                  <button
+                    onClick={() => setShowScheduleModal(true)}
+                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    <Filter className="w-4 h-4 mr-1" />
+                    Gestion des échéances
+                  </button>
+                </div>
+              </div>
+              
+              {/* Filtres et année scolaire */}
+              <div className="flex flex-wrap gap-4 items-center bg-gray-50 p-4 rounded-lg">
+                <div>
+                  <label htmlFor="school-year" className="block text-sm font-medium text-gray-700">Année scolaire</label>
+                  <select
+                    id="school-year"
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    title="Sélectionner l'année scolaire"
+                    aria-label="Sélectionner l'année scolaire"
+                  >
+                    <option value="2023-2024">2023-2024</option>
+                    <option value="2024-2025">2024-2025</option>
+                    <option value="2025-2026">2025-2026</option>
+                  </select>
+                </div>
+                
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700">Type de frais</label>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    <button 
+                      className={`inline-flex items-center px-2.5 py-1.5 border shadow-sm text-xs font-medium rounded ${selectedFeeType === '' ? 'bg-blue-100 border-blue-500 text-blue-800' : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'}`}
+                      onClick={() => setSelectedFeeType('')}
+                    >
+                      Tous
+                    </button>
+                    {feeTypes.map(fee => (
+                      <button 
+                        key={fee.id}
+                        className={`inline-flex items-center px-2.5 py-1.5 border shadow-sm text-xs font-medium rounded ${selectedFeeType === fee.id ? 'bg-blue-100 border-blue-500 text-blue-800' : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'}`}
+                        onClick={() => setSelectedFeeType(fee.id)}
+                      >
+                        {fee.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    id="custom-fees"
+                    type="checkbox"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    checked={showCustomFees}
+                    onChange={(e) => setShowCustomFees(e.target.checked)}
+                  />
+                  <label htmlFor="custom-fees" className="ml-2 block text-sm text-gray-700">
+                    Frais personnalisés
+                  </label>
+                </div>
+              </div>
+              
+              <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                <div className="p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-sm font-medium text-gray-900">Par niveau</h4>
+                    <select
+                      className="mt-1 block w-auto rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      value={levelFilter}
+                      onChange={(e) => setLevelFilter(e.target.value)}
+                      title="Filtrer par niveau d'éducation"
+                      aria-label="Filtrer par niveau d'éducation"
+                    >
+                      <option value="">Tous les niveaux</option>
+                      {educationLevels.map(level => (
+                        <option key={level.id} value={level.id}>{level.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    {educationLevels
+                      .filter(level => !levelFilter || level.id === levelFilter)
+                      .map(level => (
+                      <div key={level.id} className="space-y-4">
+                        <h5 className="text-sm font-medium text-gray-900">{level.name}</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {level.classes.map(cls => (
+                            <div key={cls.id} className="bg-white rounded-lg shadow">
+                              <div className="p-4">
+                                <h6 className="text-sm font-medium text-gray-900">{cls.name}</h6>
+                                <div className="mt-2 space-y-2">
+                                  {feeTypes
+                                    .filter(feeType => !selectedFeeType || feeType.id === selectedFeeType)
+                                    .map(feeType => (
+                                    <div key={feeType.id} className="flex justify-between items-center">
+                                      <div>
+                                        <span className="text-sm font-medium text-gray-700">{feeType.name}</span>
+                                        <span className="ml-2 text-xs text-gray-500">{feeType.amount} €</span>
+                                      </div>
+                                      <div className="flex space-x-2">
+                                        <button
+                                          onClick={() => handleEditItem({ ...feeType, classId: cls.id }, 'feeType')}
+                                          className="text-sm text-blue-600 hover:text-blue-800"
+                                        >
+                                          Modifier
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteItem(feeType, 'feeType')}
+                                          className="text-sm text-red-600 hover:text-red-800"
+                                        >
+                                          Supprimer
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Section pour les frais personnalisés */}
+              {showCustomFees && (
+                <div className="bg-white shadow overflow-hidden sm:rounded-md mt-6">
+                  <div className="p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-sm font-medium text-gray-900">Frais personnalisés par élève</h4>
+                      <button
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Ajouter frais personnalisé
+                      </button>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Élève</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classe</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type de frais</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Raison</th>
+                            <th scope="col" className="relative px-6 py-3">
+                              <span className="sr-only">Actions</span>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          <tr>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Marie Dubois</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3ème A</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Frais de scolarité</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">400 €</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Bourse partielle</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <button className="text-blue-600 hover:text-blue-800 mr-4">Modifier</button>
+                              <button className="text-red-600 hover:text-red-800">Supprimer</button>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Pierre Martin</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2nde B</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Frais de cantine</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">0 €</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Exonération sociale</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <button className="text-blue-600 hover:text-blue-800 mr-4">Modifier</button>
+                              <button className="text-red-600 hover:text-red-800">Supprimer</button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'treasury' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
@@ -902,86 +1180,6 @@ const Finance: React.FC = () => {
                       <p>• Rentrées prévues: €12,450</p>
                       <p>• Sorties prévues: €8,190</p>
                       <p>• Échéances importantes: 3</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'hr' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">Personnel & RH - Gestion de la paie</h3>
-                <button className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                  <UserCheck className="w-4 h-4 mr-2" />
-                  Calculer paie
-                </button>
-              </div>
-
-              <div className="grid lg:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Masse salariale</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Salaires bruts</span>
-                      <span className="font-bold">€45,230</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Charges sociales</span>
-                      <span className="font-bold text-red-600">€13,569</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Primes</span>
-                      <span className="font-bold text-green-600">€2,340</span>
-                    </div>
-                    <div className="border-t pt-2 flex justify-between">
-                      <span className="font-medium">Total</span>
-                      <span className="text-xl font-bold">€61,139</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 border border-yellow-200">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Impôts et taxes</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">TVA à payer</span>
-                      <span className="font-bold">€8,450</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Impôt sur sociétés</span>
-                      <span className="font-bold">€3,200</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Taxe professionnelle</span>
-                      <span className="font-bold">€1,890</span>
-                    </div>
-                    <div className="border-t pt-2 flex justify-between">
-                      <span className="font-medium">Total</span>
-                      <span className="text-xl font-bold text-red-600">€13,540</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Personnel actif</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Enseignants</span>
-                      <span className="font-bold">45</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Administration</span>
-                      <span className="font-bold">12</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Personnel technique</span>
-                      <span className="font-bold">8</span>
-                    </div>
-                    <div className="border-t pt-2 flex justify-between">
-                      <span className="font-medium">Total</span>
-                      <span className="text-xl font-bold">65</span>
                     </div>
                   </div>
                 </div>
@@ -1137,6 +1335,97 @@ const Finance: React.FC = () => {
         message={alertMessage.message}
         type={alertMessage.type}
       />
+
+      {/* Modal de gestion des échéances */}
+      <div className={`fixed inset-0 z-50 overflow-y-auto ${showScheduleModal ? 'block' : 'hidden'}`}>
+        <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+          </div>
+          <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+          <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+              <div className="sm:flex sm:items-start">
+                <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                    Gestion des échéances de paiement
+                  </h3>
+                  <div className="mt-6">
+                    <div className="bg-blue-50 p-4 rounded-md mb-6">
+                      <p className="text-sm text-blue-700">Définissez les périodes de paiement et leur répartition pour les frais de scolarité.</p>
+                    </div>
+                    
+                    <form id="schedule-form" className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Frais de scolarité - {selectedYear}</label>
+                        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Échéance</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pourcentage</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date limite</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Trimestre 1</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <input type="number" className="w-20 rounded-md border-gray-300" defaultValue="33.33" min="0" max="100" step="0.01" />
+                                  <span className="ml-1 text-gray-500">%</span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <input type="date" className="rounded-md border-gray-300" defaultValue="2024-10-15" />
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Trimestre 2</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <input type="number" className="w-20 rounded-md border-gray-300" defaultValue="33.33" min="0" max="100" step="0.01" />
+                                  <span className="ml-1 text-gray-500">%</span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <input type="date" className="rounded-md border-gray-300" defaultValue="2025-01-15" />
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Trimestre 3</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <input type="number" className="w-20 rounded-md border-gray-300" defaultValue="33.34" min="0" max="100" step="0.01" />
+                                  <span className="ml-1 text-gray-500">%</span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <input type="date" className="rounded-md border-gray-300" defaultValue="2025-04-15" />
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <button 
+                type="button" 
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                onClick={() => setShowScheduleModal(false)}
+              >
+                Enregistrer
+              </button>
+              <button 
+                type="button" 
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                onClick={() => setShowScheduleModal(false)}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

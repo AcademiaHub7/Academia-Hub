@@ -29,6 +29,8 @@ interface KycDocument {
   documentId?: string;
 }
 
+// Utilisation de l'interface KycVerificationProps définie dans StepProps.ts
+
 /**
  * Composant de vérification KYC guidée (5-10 minutes)
  */
@@ -80,6 +82,7 @@ const KycVerification: React.FC<KycVerificationProps> = ({
   }));
   
   // État global du composant
+  // Note: isSubmitting est utilisé dans submitDocuments pour éviter les soumissions multiples
   const [allDocumentsUploaded, setAllDocumentsUploaded] = useState<boolean>(false);
   const [currentPreview, setCurrentPreview] = useState<string | null>(null);
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
@@ -134,163 +137,174 @@ const KycVerification: React.FC<KycVerificationProps> = ({
   };
   
   // Gérer le changement de fichier
-  const handleFileChange = (type: DocumentType, event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      const file = event.target.files[0];
-      
-      // Vérifier la taille du fichier (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setDocuments(prev => ({
-          ...prev,
-          [type]: {
-            ...prev[type],
-            error: "Le fichier est trop volumineux (max 5MB)",
-          }
-        }));
-        return;
-      }
-      
-      // Vérifier le type de fichier
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-      if (!validTypes.includes(file.type)) {
-        setDocuments(prev => ({
-          ...prev,
-          [type]: {
-            ...prev[type],
-            error: "Format de fichier non supporté (JPG, PNG ou PDF uniquement)",
-          }
-        }));
-        return;
-      }
-      
-      // Créer une URL de prévisualisation
-      const previewUrl = URL.createObjectURL(file);
-      
-      // Mettre à jour l'état du document
+  const handleFileChange = async (type: DocumentType, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) return;
+    
+    // Vérifier le type de fichier (PDF, JPG, PNG)
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
       setDocuments(prev => ({
         ...prev,
         [type]: {
           ...prev[type],
-          file,
-          preview: previewUrl,
-          error: null,
+          error: 'Format de fichier non valide. Utilisez PDF, JPG ou PNG.',
+          file: null
         }
       }));
-      
-      // Télécharger le document
-      uploadDocument(type, file);
+      return;
     }
+    
+    // Vérifier la taille du fichier (max 5 MB)
+    const maxSize = 5 * 1024 * 1024; // 5 MB
+    if (file.size > maxSize) {
+      setDocuments(prev => ({
+        ...prev,
+        [type]: {
+          ...prev[type],
+          error: 'Fichier trop volumineux. Maximum 5 MB.',
+          file: null
+        }
+      }));
+      return;
+    }
+    
+    // Créer une URL de prévisualisation
+    const preview = URL.createObjectURL(file);
+    
+    // Mettre à jour l'état du document
+    setDocuments(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        file,
+        preview,
+        error: null,
+        uploaded: false,
+        uploading: false
+      }
+    }));
+    
+    // Télécharger automatiquement le fichier
+    await uploadDocument(type, file);
   };
   
   // Télécharger un document
   const uploadDocument = async (type: DocumentType, file: File) => {
+    if (!sessionData?.id) return;
+    
+    setDocuments(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        uploading: true,
+        error: null
+      }
+    }));
+    
     try {
-      // Mettre à jour l'état pour indiquer le téléchargement en cours
-      setDocuments(prev => ({
-        ...prev,
-        [type]: {
-          ...prev[type],
-          uploading: true,
-          error: null,
-        }
-      }));
+      // Créer un FormData pour l'upload
+      const formData = new FormData();
+      formData.append('document', file);
+      formData.append('type', type);
       
-      // Simuler un délai de téléchargement (à remplacer par un appel API réel)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Appeler le service pour télécharger le document
+      const result = await registrationService.uploadKycDocument(sessionData.id, type, formData);
       
-      // Simuler une réponse de l'API (à remplacer par un appel API réel)
-      const documentId = `doc-${type}-${Date.now()}`;
-      
-      // Mettre à jour l'état pour indiquer que le téléchargement est terminé
-      setDocuments(prev => ({
-        ...prev,
-        [type]: {
-          ...prev[type],
-          uploaded: true,
-          uploading: false,
-          documentId,
-        }
-      }));
-      
-      // Mettre à jour les données de session
-      if (sessionData && updateSessionData) {
-        const updatedSessionData = {
-          ...sessionData,
+      if (result && result.documentId) {
+        // Mettre à jour l'état du document
+        setDocuments(prev => ({
+          ...prev,
+          [type]: {
+            ...prev[type],
+            uploaded: true,
+            uploading: false,
+            documentId: result.documentId,
+            error: null
+          }
+        }));
+        
+        // Mettre à jour les données de session
+        const kycData = sessionData?.kyc || {};
+        const kycDocuments = kycData.documents || {};
+        
+        updateSessionData({
           kyc: {
-            ...sessionData.kyc,
+            ...kycData,
             documents: {
-              ...sessionData.kyc?.documents,
+              ...kycDocuments,
               [type]: {
-                documentId,
-                previewUrl: documents[type].preview,
+                documentId: result.documentId,
+                status: 'pending',
+                uploadedAt: new Date().toISOString(),
+                previewUrl: documents[type].preview
               }
             }
           }
-        };
-        updateSessionData(updatedSessionData);
+        } as Partial<RegistrationSession>);
         
         // Sauvegarder la session
-        if (saveSession) {
-          saveSession(updatedSessionData);
-        }
+        await saveSession();
+      } else {
+        throw new Error('Erreur lors du téléchargement du document');
       }
     } catch (error) {
       console.error(`Erreur lors du téléchargement du document ${type}:`, error);
       
-      // Mettre à jour l'état pour indiquer l'erreur
       setDocuments(prev => ({
         ...prev,
         [type]: {
           ...prev[type],
           uploading: false,
-          error: "Erreur lors du téléchargement. Veuillez réessayer.",
+          error: 'Erreur lors du téléchargement. Veuillez réessayer.'
         }
       }));
     }
   };
   
   // Supprimer un document
-  const removeDocument = (type: DocumentType) => {
-    // Libérer l'URL de prévisualisation si elle existe
-    if (documents[type].preview) {
-      URL.revokeObjectURL(documents[type].preview);
-    }
+  const removeDocument = async (type: DocumentType) => {
+    if (!sessionData?.id || !documents[type].documentId) return;
     
-    // Réinitialiser l'état du document
-    setDocuments(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        file: null,
-        preview: null,
-        uploaded: false,
-        uploading: false,
-        error: null,
-        documentId: undefined,
-      }
-    }));
-    
-    // Mettre à jour les données de session
-    if (sessionData && updateSessionData) {
-      const updatedKycDocuments = { ...sessionData.kyc?.documents };
-      if (updatedKycDocuments && updatedKycDocuments[type]) {
-        delete updatedKycDocuments[type];
+    try {
+      // Appeler le service pour supprimer le document
+      await registrationService.deleteKycDocument(sessionData.id, documents[type].documentId!);
+      
+      // Libérer l'URL de prévisualisation
+      if (documents[type].preview) {
+        URL.revokeObjectURL(documents[type].preview);
       }
       
-      const updatedSessionData = {
-        ...sessionData,
+      // Mettre à jour l'état du document
+      setDocuments(prev => ({
+        ...prev,
+        [type]: {
+          ...prev[type],
+          file: null,
+          preview: null,
+          uploaded: false,
+          uploading: false,
+          error: null,
+          documentId: undefined
+        }
+      }));
+      
+      // Mettre à jour les données de session
+      const kycData = sessionData?.kyc || {};
+      const updatedKycDocuments = { ...(kycData.documents || {}) };
+      delete updatedKycDocuments[type];
+      
+      updateSessionData({
         kyc: {
-          ...sessionData.kyc,
+          ...kycData,
           documents: updatedKycDocuments
         }
-      };
-      
-      updateSessionData(updatedSessionData);
+      } as Partial<RegistrationSession>);
       
       // Sauvegarder la session
-      if (saveSession) {
-        saveSession(updatedSessionData);
-      }
+      await saveSession();
+    } catch (error) {
+      console.error(`Erreur lors de la suppression du document ${type}:`, error);
     }
   };
   
@@ -308,60 +322,42 @@ const KycVerification: React.FC<KycVerificationProps> = ({
   
   // Soumettre tous les documents pour vérification
   const submitDocuments = async () => {
+    if (!sessionData?.id) return;
+    
+    setSubmissionStatus('submitting');
+    
     try {
-      // Vérifier si tous les documents requis sont téléchargés
-      const requiredDocuments = Object.values(documents).filter(doc => doc.required);
-      const allUploaded = requiredDocuments.every(doc => doc.uploaded);
+      // Préparer les documents à soumettre
+      const kycDocuments = Object.values(documents)
+        .filter(doc => doc.uploaded && doc.file)
+        .map(doc => ({
+          document_type: doc.type,
+          document_number: `${doc.type}-${Date.now()}`,
+          file: doc.file as File
+        }));
       
-      if (!allUploaded) {
-        alert("Veuillez télécharger tous les documents requis avant de soumettre.");
-        return;
-      }
+      // Soumettre les documents au service
+      await registrationService.submitKycDocuments(sessionData.id, kycDocuments);
       
-      // Mettre à jour l'état pour indiquer la soumission en cours
-      setSubmissionStatus('submitting');
-      
-      // Simuler un délai de soumission (à remplacer par un appel API réel)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simuler une réponse de l'API (à remplacer par un appel API réel)
-      const success = true;
-      
-      if (success) {
-        // Mettre à jour l'état pour indiquer que la soumission est terminée avec succès
-        setSubmissionStatus('success');
-        
-        // Mettre à jour les données de session
-        if (sessionData && updateSessionData) {
-          const updatedSessionData = {
-            ...sessionData,
-            kyc: {
-              ...sessionData.kyc,
-              submitted: true,
-              submissionDate: new Date().toISOString(),
-            }
-          };
-          
-          updateSessionData(updatedSessionData);
-          
-          // Sauvegarder la session
-          if (saveSession) {
-            saveSession(updatedSessionData);
-          }
-          
-          // Passer à l'étape suivante après un délai
-          setTimeout(() => {
-            goToNextStep();
-          }, 3000);
+      // Mettre à jour la session
+      updateSessionData({
+        kyc: {
+          ...sessionData.kyc,
+          status: 'submitted',
+          submittedAt: new Date().toISOString()
         }
-      } else {
-        // Mettre à jour l'état pour indiquer une erreur de soumission
-        setSubmissionStatus('error');
-      }
-    } catch (error) {
-      console.error("Erreur lors de la soumission des documents:", error);
+      });
       
-      // Mettre à jour l'état pour indiquer une erreur de soumission
+      await saveSession();
+      
+      setSubmissionStatus('success');
+      
+      // Passer à l'étape suivante après un délai
+      setTimeout(() => {
+        goToNextStep();
+      }, 2000);
+    } catch (error) {
+      console.error('Erreur lors de la soumission des documents KYC:', error);
       setSubmissionStatus('error');
     }
   };
@@ -434,28 +430,27 @@ const KycVerification: React.FC<KycVerificationProps> = ({
                 <div className="document-status">
                   <CheckCircle size={16} className="text-success mr-1" /> Document téléchargé
                 </div>
-              </div>
             ) : (
               <div className="document-upload-container">
                 <input
                   type="file"
-                  id="idCard-upload"
+                  id="openingAuthorization-upload"
                   className="document-input"
-                  onChange={(e) => handleFileChange('idCard', e)}
+                  onChange={(e) => handleFileChange('openingAuthorization', e)}
                   accept=".pdf,.jpg,.jpeg,.png"
-                  ref={el => fileInputRefs.current.idCard = el}
-                  disabled={documents.idCard.uploading}
-                  title="Télécharger votre pièce d'identité"
-                  placeholder="Télécharger votre pièce d'identité"
-                  aria-label="Pièce d'identité"
+                  ref={el => fileInputRefs.current.openingAuthorization = el}
+                  disabled={documents.openingAuthorization.uploading}
+                  title="Télécharger l'autorisation d'ouverture"
+                  placeholder="Télécharger l'autorisation d'ouverture"
+                  aria-label="Autorisation d'ouverture"
                 />
                 <button
                   type="button"
                   className="btn btn-primary upload-btn"
-                  onClick={() => fileInputRefs.current.idCard?.click()}
-                  disabled={documents.idCard.uploading}
+                  onClick={() => fileInputRefs.current.openingAuthorization?.click()}
+                  disabled={documents.openingAuthorization.uploading}
                 >
-                  {documents.idCard.uploading ? (
+                  {documents.openingAuthorization.uploading ? (
                     <>
                       <Loader size={16} className="mr-1 animate-spin" /> Téléchargement...
                     </>
@@ -465,9 +460,9 @@ const KycVerification: React.FC<KycVerificationProps> = ({
                     </>
                   )}
                 </button>
-                {documents.idCard.error && (
+                {documents.openingAuthorization.error && (
                   <div className="document-error">
-                    <AlertTriangle size={16} className="mr-1" /> {documents.idCard.error}
+                    <AlertTriangle size={16} className="mr-1" /> {documents.openingAuthorization.error}
                   </div>
                 )}
               </div>
@@ -507,7 +502,7 @@ const KycVerification: React.FC<KycVerificationProps> = ({
           type="button" 
           className="btn btn-outline-secondary"
           onClick={goToPreviousStep}
-          disabled={submissionStatus === 'submitting'}
+          disabled={submissionStatus === 'submitting' || submissionStatus === 'success'}
         >
           <ArrowLeft size={16} className="mr-1" /> Retour
         </button>
@@ -516,7 +511,7 @@ const KycVerification: React.FC<KycVerificationProps> = ({
           type="button" 
           className="btn btn-primary"
           onClick={submitDocuments}
-          disabled={!allDocumentsUploaded || submissionStatus === 'submitting'}
+          disabled={!allDocumentsUploaded || submissionStatus === 'submitting' || submissionStatus === 'success'}
         >
           {submissionStatus === 'submitting' ? (
             <>
@@ -526,6 +521,17 @@ const KycVerification: React.FC<KycVerificationProps> = ({
             'Soumettre pour vérification'
           )}
         </button>
+      </div>
+      
+      {/* Informations supplémentaires */}
+      <div className="kyc-info">
+        <h4>Informations importantes</h4>
+        <ul>
+          <li>Tous les documents doivent être lisibles et non expirés.</li>
+          <li>Les formats acceptés sont PDF, JPG et PNG (max 5 MB par fichier).</li>
+          <li>La vérification peut prendre jusqu'à 24-48 heures ouvrables.</li>
+          <li>Vous recevrez une notification par email une fois la vérification terminée.</li>
+        </ul>
       </div>
     </motion.div>
   );

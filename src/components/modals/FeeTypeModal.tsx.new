@@ -1,0 +1,509 @@
+import React, { useState } from 'react';
+import FormModal from './FormModal';
+import { DollarSign, Save, Calendar, Users, BookOpen, Layers } from 'lucide-react';
+
+interface FeeTypeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (feeTypeData: any) => void;
+  feeTypeData?: any;
+  isEdit?: boolean;
+  educationLevels?: Array<{ id: string; name: string }>;
+  classes?: Array<{ id: string; name: string }>;
+}
+
+const FeeTypeModal: React.FC<FeeTypeModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  feeTypeData,
+  isEdit = false,
+  educationLevels = [],
+  classes = []
+}) => {
+  const [formData, setFormData] = useState({
+    name: feeTypeData?.name || '',
+    code: feeTypeData?.code || '',
+    amount: feeTypeData?.amount || 0,
+    description: feeTypeData?.description || '',
+    type: feeTypeData?.type || 'inscription',
+    isAnnual: feeTypeData?.isAnnual ?? true,
+    isCustomizable: feeTypeData?.isCustomizable ?? false,
+    appliesTo: feeTypeData?.appliesTo || 'all',
+    targetLevel: feeTypeData?.targetLevel || '',
+    targetClass: feeTypeData?.targetClass || '',
+    hasPaymentSchedule: feeTypeData?.hasPaymentSchedule || false,
+    paymentSchedule: feeTypeData?.paymentSchedule || {
+      periods: [
+        { name: 'Trimestre 1', percentage: 33.33, dueDate: '' },
+        { name: 'Trimestre 2', percentage: 33.33, dueDate: '' },
+        { name: 'Trimestre 3', percentage: 33.34, dueDate: '' }
+      ]
+    }
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    const target = e.target as HTMLInputElement;
+    const checked = target.checked;
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) || 0 : value
+    }));
+  };
+
+  const handleSubmit = () => {
+    onSave(formData);
+    onClose();
+  };
+
+  const handlePeriodChange = (index: number, field: string, value: string | number) => {
+    setFormData(prev => {
+      const updatedPeriods = [...prev.paymentSchedule.periods];
+      updatedPeriods[index] = { ...updatedPeriods[index], [field]: value };
+      
+      return {
+        ...prev,
+        paymentSchedule: {
+          ...prev.paymentSchedule,
+          periods: updatedPeriods
+        }
+      };
+    });
+  };
+
+  const formatAmount = (amount: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XOF',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+    onClose();
+  };
+
+  const generateCode = () => {
+    if (!formData.code && formData.name) {
+      const code = formData.name
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 8);
+      
+      setFormData(prev => ({
+        ...prev,
+        code
+      }));
+    }
+  };
+
+  const formatAmount = (amount: number): string => {
+    return amount.toLocaleString('fr-FR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  };
+
+  const feeTypes = [
+    { value: 'inscription', label: "Frais d'inscription" },
+    { value: 'reinscription', label: 'Frais de réinscription' },
+    { value: 'scolarite', label: 'Frais de scolarité' },
+    { value: 'cantine', label: 'Frais de cantine' },
+    { value: 'transport', label: 'Frais de transport' },
+    { value: 'uniforme', label: 'Frais d\'uniforme' },
+    { value: 'fourniture', label: 'Fournitures scolaires' },
+    { value: 'activite', label: 'Activités extrascolaires' },
+    { value: 'autre', label: 'Autre frais' }
+  ];
+
+  return (
+    <FormModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEdit ? "Modifier un type de frais" : "Nouveau type de frais"}
+      size="lg"
+      footer={
+        <div className="flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            form="fee-type-form"
+            className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 flex items-center"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {isEdit ? "Mettre à jour" : "Enregistrer"}
+          </button>
+        </div>
+      }
+    >
+      <form id="fee-type-form" onSubmit={handleSubmit} className="space-y-6">
+        {/* Section 1: Informations de base */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+            <DollarSign className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+            Informations du type de frais
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nom*
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                onBlur={generateCode}
+                required
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Code
+              </label>
+              <input
+                type="text"
+                id="code"
+                name="code"
+                value={formData.code}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Montant (F CFA)*
+              </label>
+              <input
+                type="number"
+                id="amount"
+                name="amount"
+                value={formData.amount}
+                onChange={handleChange}
+                required
+                min="0"
+                step="100"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Type de frais*
+              </label>
+              <select
+                id="type"
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                {feeTypes.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="col-span-full">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              ></textarea>
+            </div>
+            
+            <div className="col-span-full flex space-x-6">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isAnnual"
+                  name="isAnnual"
+                  checked={formData.isAnnual}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isAnnual" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  Frais annuel
+                </label>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isCustomizable"
+                  name="isCustomizable"
+                  checked={formData.isCustomizable}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isCustomizable" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  <span className="ml-2">Personnalisable par élève</span>
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Permet de définir des montants spécifiques pour certains élèves
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Application des frais */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+            <Users className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+            Application des frais
+          </h4>
+          
+          <div className="space-y-4">
+            <div>
+              <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ces frais s'appliquent à :</p>
+              
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="appliesTo-all"
+                    name="appliesTo"
+                    value="all"
+                    checked={formData.appliesTo === 'all'}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <label htmlFor="appliesTo-all" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    Tous les élèves
+                  </label>
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="appliesTo-level"
+                    name="appliesTo"
+                    value="level"
+                    checked={formData.appliesTo === 'level'}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <label htmlFor="appliesTo-level" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    Un niveau spécifique
+                  </label>
+                </div>
+                
+                {formData.appliesTo === 'level' && (
+                  <div className="pl-6 mt-2">
+                    <select
+                      id="targetLevel"
+                      name="targetLevel"
+                      value={formData.targetLevel}
+                      onChange={handleChange}
+                      required={formData.appliesTo === 'level'}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="">Sélectionner un niveau</option>
+                      {educationLevels.map(level => (
+                        <option key={level.id} value={level.id}>{level.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="appliesTo-class"
+                    name="appliesTo"
+                    value="class"
+                    checked={formData.appliesTo === 'class'}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <label htmlFor="appliesTo-class" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    Une classe spécifique
+                  </label>
+                </div>
+                
+                {formData.appliesTo === 'class' && (
+                  <div className="pl-6 mt-2">
+                    <select
+                      id="targetClass"
+                      name="targetClass"
+                      value={formData.targetClass}
+                      onChange={handleChange}
+                      required={formData.appliesTo === 'class'}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="">Sélectionner une classe</option>
+                      {classes.map(cls => (
+                        <option key={cls.id} value={cls.id}>{cls.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Section 3: Échéancier de paiement (pour frais de scolarité) */}
+        {formData.type === 'scolarite' && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+              <Calendar className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+              Échéancier de paiement
+            </h4>
+            
+            <div className="space-y-4">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="hasPaymentSchedule"
+                  name="hasPaymentSchedule"
+                  checked={formData.hasPaymentSchedule}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="hasPaymentSchedule" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  Définir un échéancier de paiement
+                </label>
+              </div>
+              
+              {formData.hasPaymentSchedule && (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Définissez les différentes périodes de paiement pour ce frais de scolarité. Le pourcentage total doit être égal à 100%.
+                  </p>
+                  
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead>
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Période</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pourcentage (%)</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date limite</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Montant</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {formData.paymentSchedule.periods.map((period, index) => (
+                        <tr key={index}>
+                          <td className="px-4 py-2">
+                            <input
+                              type="text"
+                              value={period.name}
+                              onChange={(e) => handlePeriodChange(index, 'name', e.target.value)}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              title={`Nom de la période ${index + 1}`}
+                              placeholder="Nom de la période"
+                            />
+                          </td>
+                          <td className="px-4 py-2">
+                            <input
+                              type="number"
+                              value={period.percentage}
+                              onChange={(e) => handlePeriodChange(index, 'percentage', parseFloat(e.target.value) || 0)}
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            />
+                          </td>
+                          <td className="px-4 py-2">
+                            <input
+                              type="date"
+                              value={period.dueDate}
+                              onChange={(e) => handlePeriodChange(index, 'dueDate', e.target.value)}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              title={`Date limite de la période ${index + 1}`}
+                              placeholder="Date limite"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-right text-sm text-gray-700 dark:text-gray-300">
+                            {formatAmount(Math.round(formData.amount * (period.percentage / 100)))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td className="px-4 py-2 font-medium text-sm">Total</td>
+                        <td className="px-4 py-2 font-medium text-sm">
+                          {formData.paymentSchedule.periods.reduce((sum, p) => sum + p.percentage, 0).toFixed(2)}%
+                        </td>
+                        <td></td>
+                        <td className="px-4 py-2 text-right font-medium text-sm">
+                          {formatAmount(formData.amount)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Section 4: Résumé */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+            <Layers className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+            Résumé
+          </h4>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h5 className="font-medium text-gray-700 dark:text-gray-300">Nom:</h5>
+                <p className="text-gray-900 dark:text-white">{formData.name || '-'}</p>
+              </div>
+              
+              <div>
+                <h5 className="font-medium text-gray-700 dark:text-gray-300">Type:</h5>
+                <p className="text-gray-900 dark:text-white">
+                  {feeTypes.find(t => t.value === formData.type)?.label || '-'}
+                </p>
+              </div>
+              
+              <div>
+                <h5 className="font-medium text-gray-700 dark:text-gray-300">Montant:</h5>
+                <p className="text-gray-900 dark:text-white font-bold">{formatAmount(formData.amount)}</p>
+              </div>
+              
+              <div>
+                <h5 className="font-medium text-gray-700 dark:text-gray-300">Application:</h5>
+                <p className="text-gray-900 dark:text-white">
+                  {formData.appliesTo === 'all' ? 'Tous les élèves' : 
+                   formData.appliesTo === 'level' ? `Niveau: ${educationLevels.find(l => l.id === formData.targetLevel)?.name || '-'}` :
+                   formData.appliesTo === 'class' ? `Classe: ${classes.find(c => c.id === formData.targetClass)?.name || '-'}` : '-'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </FormModal>
+  );
+};
+
+export default FeeTypeModal;

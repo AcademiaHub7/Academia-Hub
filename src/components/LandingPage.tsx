@@ -90,7 +90,7 @@ const LandingPage: React.FC = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                   <Link 
-                    to="/register" 
+                    to="/register/flow" 
                     className="group bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-300 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                   >
                     Commencer maintenant

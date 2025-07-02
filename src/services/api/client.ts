@@ -3,6 +3,16 @@
  * @module services/api/client
  */
 
+// Importation des données simulées pour le mode développement
+import { 
+  mockSession, 
+  mockPayment, 
+  mockPaymentStatus, 
+  logMockData, 
+  simulateDelay,
+  generateId 
+} from './mockData';
+
 /**
  * Options pour les requêtes API
  */
@@ -10,6 +20,9 @@ interface ApiOptions {
   headers?: Record<string, string>;
   params?: Record<string, string>;
 }
+
+// Activer le mode simulé pour le développement
+const USE_MOCK = true;
 
 /**
  * Classe client pour les requêtes API
@@ -32,13 +45,35 @@ class ApiClient {
    * @returns Promesse avec les données de la réponse
    */
   async get<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
-    const url = this.buildUrl(endpoint, options.params);
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: this.getHeaders(options.headers),
-    });
+    // Si mode simulé activé
+    if (USE_MOCK) {
+      logMockData('GET', endpoint);
+      await simulateDelay();
+      
+      // Retourner des données simulées selon l'endpoint
+      if (endpoint.includes('/registration/session/')) {
+        if (endpoint.includes('/payment-status/')) {
+          return mockPaymentStatus as unknown as T;
+        }
+        return mockSession as unknown as T;
+      }
+      
+      return {} as T;
+    }
+    
+    // Sinon, faire une vraie requête API
+    try {
+      const url = this.buildUrl(endpoint, options.params);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(options.headers),
+      });
 
-    return this.handleResponse<T>(response);
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      console.error('Erreur API GET:', error);
+      throw error;
+    }
   }
 
   /**
@@ -49,14 +84,37 @@ class ApiClient {
    * @returns Promesse avec les données de la réponse
    */
   async post<T>(endpoint: string, data: unknown, options: ApiOptions = {}): Promise<T> {
-    const url = this.buildUrl(endpoint, options.params);
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: this.getHeaders(options.headers),
-      body: JSON.stringify(data),
-    });
+    // Si mode simulé activé
+    if (USE_MOCK) {
+      logMockData('POST', endpoint, data);
+      await simulateDelay();
+      
+      // Retourner des données simulées selon l'endpoint
+      if (endpoint === '/registration/start-session') {
+        return mockSession as unknown as T;
+      }
+      
+      if (endpoint.includes('/step3')) {
+        return mockPayment as unknown as T;
+      }
+      
+      return { id: generateId() } as unknown as T;
+    }
+    
+    // Sinon, faire une vraie requête API
+    try {
+      const url = this.buildUrl(endpoint, options.params);
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: this.getHeaders(options.headers),
+        body: JSON.stringify(data),
+      });
 
-    return this.handleResponse<T>(response);
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      console.error('Erreur API POST:', error);
+      throw error;
+    }
   }
 
   /**

@@ -10,13 +10,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { TenantProvider } from './contexts/TenantContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 
-// Nouvelles routes d'inscription et KYC
-import RegistrationRoutes from './routes/registrationRoutes';
-import SchoolRegistrationForm from './components/registration/SchoolRegistrationForm';
-import SubscriptionPlanSelection from './components/registration/SubscriptionPlanSelection';
-import PaymentPage from './components/registration/PaymentPage';
-import SuccessPage from './components/registration/SuccessPage';
-import KYCVerificationForm from './components/kyc/KYCVerificationForm';
+// Nouveau flux d'inscription multi-étapes
+import RegistrationFlow from './components/registration/RegistrationFlow';
 
 // Loading page component
 import LoadingPage from './components/loading/LoadingPage';
@@ -77,7 +72,8 @@ function App() {
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+                {/* Redirection de l'ancienne route /register vers le nouveau flux */}
+                <Route path="/register" element={<Navigate to="/register/flow" replace />} />
                 <Route path="/subscription" element={<Subscription />} />
                 <Route path="/dashboard/*" element={<Dashboard />} />
                 
@@ -88,15 +84,8 @@ function App() {
                   </div>
                 } />
                 
-                {/* Nouvelles routes d'inscription école */}
-                <Route path="/register/school" element={<SchoolRegistrationForm />} />
-                <Route path="/register/school/plan" element={<SubscriptionPlanSelection />} />
-                <Route path="/register/school/payment" element={<PaymentPage />} />
-                <Route path="/register/school/success" element={<SuccessPage />} />
-                <Route path="/school/kyc-verification" element={<KYCVerificationForm />} />
-                
-                {/* Routes imbriquées pour le processus d'inscription */}
-                <Route path="/register/*" element={<RegistrationRoutes />} />
+                {/* Nouveau flux d'inscription multi-étapes */}
+                <Route path="/register/flow" element={<RegistrationFlow />} />
                 
                 {/* Route de secours pour les chemins non trouvés */}
                 <Route path="*" element={<Navigate to="/" replace />} />
