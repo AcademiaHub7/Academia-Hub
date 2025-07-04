@@ -46,6 +46,7 @@ import {
 } from '../modals';
 import FormModal from '../modals/FormModal';
 import { Subject } from '../modals/SubjectModal';
+import JournalTab from './JournalTab';
 
 
 const Planning: React.FC = () => {
@@ -2100,24 +2101,11 @@ const Planning: React.FC = () => {
           )}
 
           {activeTab === 'journal' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
+            <div className="h-full flex flex-col">
+              <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Cahier Journal</h3>
-                <button 
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800"
-                  onClick={handleAddJournalEntry}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nouvelle entrée
-                </button>
               </div>
-              
-              {/* Contenu de l'onglet cahier journal supprimé - à remplacer par la nouvelle implémentation */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
-                <FileText className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-3" />
-                <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">Contenu supprimé</h4>
-                <p className="text-gray-600 dark:text-gray-400">Le contenu de l'onglet Cahier Journal a été supprimé en attendant la nouvelle implémentation.</p>
-              </div>
+              <JournalTab onlineStatus={true} />
             </div>
           )}
           
