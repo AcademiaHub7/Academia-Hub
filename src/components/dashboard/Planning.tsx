@@ -1,41 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 // Import shared dashboard styles
 import '../../styles/dashboardStyles.css';
 import { 
   Building, 
   Plus, 
-  Search, 
   Filter, 
   Calendar,
   Users,
   MapPin,
   Clock,
   Settings,
-  CheckCircle,
   AlertTriangle,
   BookOpen,
   User,
   Monitor,
   Wrench,
-  BarChart3
-} from 'lucide-react';
+  BarChart3,
+  X,
+  Search,
+  Trash2,
+  Edit,
+  Check,
+  FileText,
+  Home,
+  Map,
+  Tool,
+  Clipboard,
+  Printer
+ } from 'lucide-react';
 import { 
-  ClassModal, 
-  RoomReservationModal, 
-  TeacherAssignmentModal, 
-  ScheduleEntryModal, 
-  TeacherAvailabilityModal, 
-  WorkHoursModal,
-  ConfirmModal,
   AlertModal,
-  RoomManagementModal,
+  ClassModal,
+  ClassStudentAssignmentModal,
+  ConfirmModal,
   RoomMaintenanceModal,
+  RoomManagementModal,
+  RoomReservationModal,
   ResourcePlanningModal,
-  ClassStudentAssignmentModal
+  TeacherAssignmentModal,
+  ScheduleEntryModal,
+  TeacherAvailabilityModal,
+  TeacherScheduleModal,
+  WorkHoursModal,
+  SubjectModal 
 } from '../modals';
+import FormModal from '../modals/FormModal';
+import { Subject } from '../modals/SubjectModal';
+
 
 const Planning: React.FC = () => {
   const [activeTab, setActiveTab] = useState('classes');
+  const [selectedClass, setSelectedClass] = useState<string>('6ème A'); // Classe par défaut
+  
+  // État pour les heures de pause
+  const [breakTimes, setBreakTimes] = useState({
+    morning: { start: '10:00', end: '10:15', label: 'Récréation matin' },
+    lunch: { start: '12:00', end: '13:30', label: 'Pause déjeuner' },
+    afternoon: { start: '15:30', end: '15:45', label: 'Récréation après-midi' }
+  });
+  const [isBreakTimeModalOpen, setIsBreakTimeModalOpen] = useState(false);
+  const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
+  const [isScheduleGenerationModalOpen, setIsScheduleGenerationModalOpen] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   
   // Modals state
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
@@ -46,16 +72,27 @@ const Planning: React.FC = () => {
   const [isWorkHoursModalOpen, setIsWorkHoursModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [isRoomManagementModalOpen, setIsRoomManagementModalOpen] = useState(false);
   const [isRoomMaintenanceModalOpen, setIsRoomMaintenanceModalOpen] = useState(false);
   const [isResourcePlanningModalOpen, setIsResourcePlanningModalOpen] = useState(false);
   const [isClassStudentAssignmentModalOpen, setIsClassStudentAssignmentModalOpen] = useState(false);
+  const [isTeacherScheduleModalOpen, setIsTeacherScheduleModalOpen] = useState(false);
   
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<Subject | any>(null);
   const [selectedResourceForPlanning, setSelectedResourceForPlanning] = useState<any>(null);
   const [selectedClassForAssignment, setSelectedClassForAssignment] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedEducationLevel, setSelectedEducationLevel] = useState<string | null>(null);
   const [alertMessage, setAlertMessage] = useState({ title: '', message: '', type: 'success' as 'success' | 'error' | 'info' | 'warning' });
+  
+  // États pour le filtrage des classes
+  const [isClassFilterModalOpen, setIsClassFilterModalOpen] = useState(false);
+  const [classFilters, setClassFilters] = useState({
+    level: '',
+    occupancyRate: 'all', // 'all', 'low', 'medium', 'high', 'full'
+    hasSubjects: 'all' // 'all', 'yes', 'no'
+  });
 
   // Données factices pour les élèves
   const studentsData = [
@@ -71,7 +108,7 @@ const Planning: React.FC = () => {
     { id: 'STD010', firstName: 'Camille', lastName: 'Michel', classId: null, status: 'active' },
   ];
 
-  const classesData = [
+  const classesData = useMemo(() => [
     {
       id: 'CLS-2024-001',
       name: '6ème A',
@@ -102,7 +139,7 @@ const Planning: React.FC = () => {
       classroom: 'Salle 301',
       subjects: ['Mathématiques', 'Physique-Chimie', 'SVT', 'Philosophie']
     }
-  ];
+  ], []);
 
   const resourcesData = [
     {
@@ -167,24 +204,150 @@ const Planning: React.FC = () => {
     }
   ];
 
-  const scheduleData = [
-    {
-      time: '08:00-09:00',
-      monday: { subject: 'Français', teacher: 'Mme Dubois', room: 'Salle 101' },
-      tuesday: { subject: 'Mathématiques', teacher: 'M. Martin', room: 'Salle 102' },
-      wednesday: { subject: 'Histoire', teacher: 'M. Durand', room: 'Salle 103' },
-      thursday: { subject: 'Anglais', teacher: 'Mme Laurent', room: 'Salle 104' },
-      friday: { subject: 'SVT', teacher: 'M. Bernard', room: 'Lab SVT' }
-    },
-    {
-      time: '09:00-10:00',
-      monday: { subject: 'Mathématiques', teacher: 'M. Martin', room: 'Salle 102' },
-      tuesday: { subject: 'Français', teacher: 'Mme Dubois', room: 'Salle 101' },
-      wednesday: { subject: 'Sport', teacher: 'M. Petit', room: 'Gymnase' },
-      thursday: { subject: 'Physique', teacher: 'M. Moreau', room: 'Lab Physique' },
-      friday: { subject: 'Anglais', teacher: 'Mme Laurent', room: 'Salle 104' }
-    }
-  ];
+  // Données d'emploi du temps par classe
+  const classSchedules = {
+    '6ème A': [
+      {
+        time: '08:00-09:00',
+        monday: { subject: 'Français', teacher: 'Mme Dubois', room: 'Salle 101' },
+        tuesday: { subject: 'Mathématiques', teacher: 'M. Martin', room: 'Salle 102' },
+        wednesday: { subject: 'Histoire-Géo', teacher: 'M. Durand', room: 'Salle 103' },
+        thursday: { subject: 'Anglais', teacher: 'Mme Laurent', room: 'Salle 104' },
+        friday: { subject: 'SVT', teacher: 'M. Bernard', room: 'Lab SVT' }
+      },
+      {
+        time: '09:00-10:00',
+        monday: { subject: 'Mathématiques', teacher: 'M. Martin', room: 'Salle 102' },
+        tuesday: { subject: 'Français', teacher: 'Mme Dubois', room: 'Salle 101' },
+        wednesday: { subject: 'Sport', teacher: 'M. Petit', room: 'Gymnase' },
+        thursday: { subject: 'Physique', teacher: 'M. Moreau', room: 'Lab Physique' },
+        friday: { subject: 'Anglais', teacher: 'Mme Laurent', room: 'Salle 104' }
+      },
+      {
+        time: '10:00-11:00',
+        monday: { subject: 'Histoire-Géo', teacher: 'M. Durand', room: 'Salle 103' },
+        tuesday: { subject: 'SVT', teacher: 'M. Bernard', room: 'Lab SVT' },
+        wednesday: { subject: 'Français', teacher: 'Mme Dubois', room: 'Salle 101' },
+        thursday: { subject: 'Mathématiques', teacher: 'M. Martin', room: 'Salle 102' },
+        friday: { subject: 'Technologie', teacher: 'Mme Roux', room: 'Salle Tech' }
+      }
+    ],
+    '5ème B': [
+      {
+        time: '08:00-09:00',
+        monday: { subject: 'Mathématiques', teacher: 'M. Martin', room: 'Salle 205' },
+        tuesday: { subject: 'Français', teacher: 'Mme Dubois', room: 'Salle 206' },
+        wednesday: { subject: 'SVT', teacher: 'M. Bernard', room: 'Lab SVT' },
+        thursday: { subject: 'Espagnol', teacher: 'Mme Garcia', room: 'Salle 207' },
+        friday: { subject: 'Histoire-Géo', teacher: 'M. Durand', room: 'Salle 208' }
+      },
+      {
+        time: '09:00-10:00',
+        monday: { subject: 'Français', teacher: 'Mme Dubois', room: 'Salle 206' },
+        tuesday: { subject: 'Mathématiques', teacher: 'M. Martin', room: 'Salle 205' },
+        wednesday: { subject: 'Technologie', teacher: 'Mme Roux', room: 'Salle Tech' },
+        thursday: { subject: 'SVT', teacher: 'M. Bernard', room: 'Lab SVT' },
+        friday: { subject: 'Sport', teacher: 'M. Petit', room: 'Gymnase' }
+      },
+      {
+        time: '10:00-11:00',
+        monday: { subject: 'Histoire-Géo', teacher: 'M. Durand', room: 'Salle 208' },
+        tuesday: { subject: 'Espagnol', teacher: 'Mme Garcia', room: 'Salle 207' },
+        wednesday: { subject: 'Mathématiques', teacher: 'M. Martin', room: 'Salle 205' },
+        thursday: { subject: 'Français', teacher: 'Mme Dubois', room: 'Salle 206' },
+        friday: { subject: 'Physique', teacher: 'M. Moreau', room: 'Lab Physique' }
+      }
+    ],
+    'Terminale S': [
+      {
+        time: '08:00-09:00',
+        monday: { subject: 'Mathématiques', teacher: 'M. Martin', room: 'Salle 301' },
+        tuesday: { subject: 'Physique-Chimie', teacher: 'M. Moreau', room: 'Lab Physique' },
+        wednesday: { subject: 'SVT', teacher: 'M. Bernard', room: 'Lab SVT' },
+        thursday: { subject: 'Philosophie', teacher: 'Mme Lefèvre', room: 'Salle 302' },
+        friday: { subject: 'Mathématiques', teacher: 'M. Martin', room: 'Salle 301' }
+      },
+      {
+        time: '09:00-10:00',
+        monday: { subject: 'Physique-Chimie', teacher: 'M. Moreau', room: 'Lab Physique' },
+        tuesday: { subject: 'Mathématiques', teacher: 'M. Martin', room: 'Salle 301' },
+        wednesday: { subject: 'Philosophie', teacher: 'Mme Lefèvre', room: 'Salle 302' },
+        thursday: { subject: 'SVT', teacher: 'M. Bernard', room: 'Lab SVT' },
+        friday: { subject: 'Physique-Chimie', teacher: 'M. Moreau', room: 'Lab Physique' }
+      },
+      {
+        time: '10:00-11:00',
+        monday: { subject: 'SVT', teacher: 'M. Bernard', room: 'Lab SVT' },
+        tuesday: { subject: 'Philosophie', teacher: 'Mme Lefèvre', room: 'Salle 302' },
+        wednesday: { subject: 'Mathématiques', teacher: 'M. Martin', room: 'Salle 301' },
+        thursday: { subject: 'Physique-Chimie', teacher: 'M. Moreau', room: 'Lab Physique' },
+        friday: { subject: 'SVT', teacher: 'M. Bernard', room: 'Lab SVT' }
+      }
+    ]
+  };
+
+  // État pour stocker les emplois du temps générés
+  const [generatedSchedules, setGeneratedSchedules] = useState(classSchedules);
+
+  // Récupérer l'emploi du temps de la classe sélectionnée
+  const scheduleData = useMemo(() => {
+    // Récupérer les données de base
+    const baseSchedule = generatedSchedules[selectedClass] || generatedSchedules['6ème A'];
+    
+    // Ajouter le samedi si manquant dans les données
+    const scheduleWithSaturday = baseSchedule.map(slot => {
+      if (!('saturday' in slot)) {
+        return { ...slot, saturday: null };
+      }
+      return slot;
+    });
+    
+    // Ajouter les pauses au planning
+    const scheduleWithBreaks = [...scheduleWithSaturday];
+    
+    // Ajouter pause du matin
+    scheduleWithBreaks.push({
+      time: `${breakTimes.morning.start}-${breakTimes.morning.end}`,
+      isBreak: true,
+      label: breakTimes.morning.label,
+      monday: { isBreak: true },
+      tuesday: { isBreak: true },
+      wednesday: { isBreak: true },
+      thursday: { isBreak: true },
+      friday: { isBreak: true }
+    });
+    
+    // Ajouter pause déjeuner
+    scheduleWithBreaks.push({
+      time: `${breakTimes.lunch.start}-${breakTimes.lunch.end}`,
+      isBreak: true,
+      label: breakTimes.lunch.label,
+      monday: { isBreak: true },
+      tuesday: { isBreak: true },
+      wednesday: { isBreak: true },
+      thursday: { isBreak: true },
+      friday: { isBreak: true }
+    });
+    
+    // Ajouter pause après-midi
+    scheduleWithBreaks.push({
+      time: `${breakTimes.afternoon.start}-${breakTimes.afternoon.end}`,
+      isBreak: true,
+      label: breakTimes.afternoon.label,
+      monday: { isBreak: true },
+      tuesday: { isBreak: true },
+      wednesday: { isBreak: true },
+      thursday: { isBreak: true },
+      friday: { isBreak: true }
+    });
+    
+    // Trier le planning par heure
+    return scheduleWithBreaks.sort((a, b) => {
+      const timeA = a.time.split('-')[0];
+      const timeB = b.time.split('-')[0];
+      return timeA.localeCompare(timeB);
+    });
+  }, [selectedClass, breakTimes]);
 
   const planningStats = [
     {
@@ -217,6 +380,76 @@ const Planning: React.FC = () => {
     }
   ];
 
+  const subjectsData = [
+    {
+      id: 'SUB-2024-001',
+      name: 'Français',
+      level: 'Tous niveaux',
+      department: 'Langues',
+      hoursPerWeek: {
+        'Maternelle': 5,
+        'Primaire': 6,
+        'Secondaire': 4
+      },
+      coefficient: 3,
+      teachers: ['Mme Dubois', 'M. Leroy', 'Mme Petit']
+    },
+    {
+      id: 'SUB-2024-002',
+      name: 'Mathématiques',
+      level: 'Tous niveaux',
+      department: 'Sciences',
+      hoursPerWeek: {
+        'Maternelle': 3,
+        'Primaire': 5,
+        'Secondaire': 5
+      },
+      coefficient: 4,
+      teachers: ['M. Martin', 'Mme Roux', 'M. Moreau']
+    },
+    {
+      id: 'SUB-2024-003',
+      name: 'Histoire-Géographie',
+      level: 'Primaire et Secondaire',
+      department: 'Sciences',
+      hoursPerWeek: {
+        'Primaire': 3,
+        'Secondaire': 3.5
+      },
+      coefficient: 2,
+      teachers: ['M. Durand', 'Mme Lefebvre']
+    },
+    {
+      id: 'SUB-2024-004',
+      name: 'Sciences de la Vie et de la Terre',
+      level: 'Secondaire',
+      department: 'Sciences',
+      hoursPerWeek: {
+        'Secondaire': 2.5
+      },
+      coefficient: 2,
+      teachers: ['M. Bernard', 'Mme Girard']
+    },
+    {
+      id: 'SUB-2024-005',
+      name: 'Anglais',
+      level: 'Primaire et Secondaire',
+      department: 'Langues',
+      hoursPerWeek: {
+        'Primaire': 2,
+        'Secondaire': 3
+      },
+      coefficient: 2,
+      teachers: ['Mme Laurent', 'M. Thomas']
+    }
+  ];
+
+  const educationLevels = [
+    { id: 'MAT', name: 'Maternelle', classes: ['Petite Section', 'Moyenne Section', 'Grande Section'] },
+    { id: 'PRI', name: 'Primaire', classes: ['CP', 'CE1', 'CE2', 'CM1', 'CM2'] },
+    { id: 'SEC', name: 'Secondaire', classes: ['6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Terminale'] }
+  ];
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
@@ -234,7 +467,57 @@ const Planning: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
-
+  
+  // État pour les classes filtrées
+  const [filteredClassesData, setFilteredClassesData] = useState<any[]>([]);
+  
+  // Initialiser les données filtrées au chargement du composant
+  useEffect(() => {
+    setFilteredClassesData(classesData);
+  }, [classesData]);
+  
+  // Appliquer les filtres quand ils changent
+  useEffect(() => {
+    const applyFilters = () => {
+      let filtered = [...classesData];
+      
+      // Filtrer par niveau d'éducation
+      if (classFilters.level) {
+        filtered = filtered.filter(classItem => classItem.level === classFilters.level);
+      }
+      
+      // Filtrer par taux d'occupation
+      if (classFilters.occupancyRate !== 'all') {
+        filtered = filtered.filter(classItem => {
+          const occupancyRate = classItem.enrolled / classItem.capacity;
+          
+          switch (classFilters.occupancyRate) {
+            case 'low': return occupancyRate < 0.25;
+            case 'medium': return occupancyRate >= 0.25 && occupancyRate < 0.5;
+            case 'high': return occupancyRate >= 0.5 && occupancyRate < 0.9;
+            case 'full': return occupancyRate >= 0.9;
+            default: return true;
+          }
+        });
+      }
+      
+      // Filtrer par présence de matières
+      if (classFilters.hasSubjects !== 'all') {
+        filtered = filtered.filter(classItem => {
+          if (classFilters.hasSubjects === 'yes') {
+            return classItem.subjects && classItem.subjects.length > 0;
+          } else {
+            return !classItem.subjects || classItem.subjects.length === 0;
+          }
+        });
+      }
+      
+      setFilteredClassesData(filtered);
+    };
+    
+    applyFilters();
+  }, [classFilters, classesData]);
+  
   // Handlers pour les modals
   const handleNewClass = () => {
     setIsEditMode(false);
@@ -265,6 +548,11 @@ const Planning: React.FC = () => {
     setIsTeacherAvailabilityModalOpen(true);
   };
 
+  const handleTeacherSchedule = (teacher: any) => {
+    setSelectedItem(teacher);
+    setIsTeacherScheduleModalOpen(true);
+  };
+
   const handleNewScheduleEntry = () => {
     setIsEditMode(false);
     setSelectedItem(null);
@@ -292,6 +580,272 @@ const Planning: React.FC = () => {
       return;
     }
     setIsRoomMaintenanceModalOpen(true);
+  };
+
+  // Fonction pour générer automatiquement les emplois du temps
+  const generateSchedules = () => {
+    setIsGeneratingSchedule(true);
+    
+    // Créer une copie des emplois du temps actuels
+    const newSchedules = { ...generatedSchedules };
+    
+    // Pour chaque classe
+    classesData.forEach(classItem => {
+      // Si la classe n'a pas d'emploi du temps, en créer un vide
+      if (!newSchedules[classItem.name]) {
+        newSchedules[classItem.name] = [];
+      }
+      
+      // Créer un tableau pour les créneaux horaires standards
+      const timeSlots = ['08:00-09:00', '09:00-10:00', '10:30-11:30', '11:30-12:30', '14:00-15:00', '15:00-16:00', '16:15-17:15'];
+      
+      // Créer un emploi du temps vide avec ces créneaux
+      const emptySchedule = timeSlots.map(time => ({
+        time,
+        monday: null,
+        tuesday: null,
+        wednesday: null,
+        thursday: null,
+        friday: null,
+        saturday: null
+      }));
+      
+      // Fusionner avec l'emploi du temps existant pour conserver les entrées déjà définies
+      const existingSlots = newSchedules[classItem.name];
+      const mergedSchedule = emptySchedule.map(slot => {
+        const existingSlot = existingSlots.find(existing => existing.time === slot.time);
+        return existingSlot || slot;
+      });
+      
+      // Répartir les matières sur les créneaux disponibles
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const subjects = classItem.subjects || [];
+      
+      // Pour chaque matière
+      subjects.forEach(subject => {
+        // Trouver un enseignant pour cette matière
+        const teacher = teachersData.find(t => t.subject === subject && t.weeklyHours < t.maxHours);
+        
+        if (teacher) {
+          // Trouver une salle disponible
+          const room = resourcesData.find(r => r.status === 'available');
+          const roomName = room ? room.name : 'À définir';
+          
+          // Chercher des créneaux libres pour cette matière
+          // On essaie de placer chaque matière au moins 2 fois par semaine
+          let placedCount = 0;
+          
+          days.forEach(day => {
+            if (placedCount < 2) {
+              // Chercher un créneau libre ce jour
+              const availableSlot = mergedSchedule.find(slot => 
+                !slot[day] && // Le créneau est libre ce jour
+                !days.some(otherDay => // L'enseignant n'est pas déjà occupé sur ce créneau
+                  slot[otherDay] && slot[otherDay].teacher === teacher.name
+                )
+              );
+              
+              if (availableSlot) {
+                // Placer le cours
+                availableSlot[day] = {
+                  subject,
+                  teacher: teacher.name,
+                  room: roomName
+                };
+                placedCount++;
+              }
+            }
+          });
+        }
+      });
+      
+      // Mettre à jour l'emploi du temps de la classe
+      newSchedules[classItem.name] = mergedSchedule;
+    });
+    
+    // Mettre à jour l'état avec les nouveaux emplois du temps
+    setGeneratedSchedules(newSchedules);
+    setIsGeneratingSchedule(false);
+    
+    // Afficher un message de confirmation
+    setAlertMessage({
+      title: 'Emplois du temps générés',
+      message: 'Les emplois du temps ont été générés avec succès pour toutes les classes.',
+      type: 'success'
+    });
+    setIsAlertModalOpen(true);
+    setIsScheduleGenerationModalOpen(false);
+  };
+  
+  // Gestionnaire pour le bouton "Générer auto"
+  const handleGenerateSchedules = () => {
+    setIsScheduleGenerationModalOpen(true);
+  };
+  
+  // Fonction pour imprimer l'emploi du temps
+  const printSchedule = () => {
+    // Fermer le modal d'impression
+    setIsPrintModalOpen(false);
+    
+    // Créer une nouvelle fenêtre pour l'impression
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      setAlertMessage({
+        title: 'Erreur d\'impression',
+        message: 'Impossible d\'ouvrir la fenêtre d\'impression. Veuillez vérifier les paramètres de votre navigateur.',
+        type: 'error'
+      });
+      setIsAlertModalOpen(true);
+      return;
+    }
+    
+    // Récupérer les données de l'emploi du temps actuel
+    const currentSchedule = generatedSchedules[selectedClass] || [];
+    
+    // Créer le contenu HTML pour l'impression
+    const printContent = `
+      <!DOCTYPE html>
+      <html lang="fr">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Emploi du temps - ${selectedClass}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          .school-info {
+            font-size: 14px;
+            margin-bottom: 10px;
+          }
+          h1 {
+            font-size: 24px;
+            margin: 0;
+            padding: 0;
+          }
+          .subtitle {
+            font-size: 16px;
+            margin: 5px 0;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+          }
+          th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+          }
+          .time-col {
+            width: 100px;
+            font-weight: bold;
+          }
+          .break-row {
+            background-color: #fff8e1;
+          }
+          .subject {
+            font-weight: bold;
+            margin-bottom: 3px;
+          }
+          .teacher {
+            font-size: 12px;
+            margin-bottom: 2px;
+          }
+          .room {
+            font-size: 12px;
+            font-style: italic;
+          }
+          .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            text-align: center;
+            color: #666;
+          }
+          @media print {
+            body {
+              padding: 0;
+              margin: 0;
+            }
+            button {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="school-info">Academia Hub - Établissement scolaire</div>
+          <h1>Emploi du temps</h1>
+          <p class="subtitle">Classe: ${selectedClass} - Année scolaire 2024-2025</p>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th class="time-col">Horaire</th>
+              <th>Lundi</th>
+              <th>Mardi</th>
+              <th>Mercredi</th>
+              <th>Jeudi</th>
+              <th>Vendredi</th>
+              <th>Samedi</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${scheduleData.map(slot => {
+              const isBreak = slot.isBreak === true;
+              return `
+                <tr class="${isBreak ? 'break-row' : ''}">
+                  <td class="time-col">
+                    ${slot.time}
+                    ${isBreak ? `<div><small>${slot.label || ''}</small></div>` : ''}
+                  </td>
+                  ${['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].map(day => {
+                    const course = slot[day];
+                    if (!course) return '<td></td>';
+                    return `
+                      <td>
+                        ${course.subject ? `<div class="subject">${course.subject}</div>` : ''}
+                        ${course.teacher ? `<div class="teacher">${course.teacher}</div>` : ''}
+                        ${course.room ? `<div class="room">${course.room}</div>` : ''}
+                      </td>
+                    `;
+                  }).join('')}
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+        
+        <div class="footer">
+          <p>Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+        </div>
+        
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 500);
+          }
+        </script>
+      </body>
+      </html>
+    `;
+    
+    // Écrire le contenu dans la nouvelle fenêtre
+    printWindow.document.write(printContent);
+    printWindow.document.close();
   };
 
   const handleOpenResourcePlanning = (resource: any = null) => {
@@ -436,6 +990,18 @@ const Planning: React.FC = () => {
     setIsAlertModalOpen(true);
   };
 
+  const handleNewSubject = () => {
+    setIsEditMode(false);
+    setSelectedItem(null);
+    setIsSubjectModalOpen(true);
+  };
+
+  const handleEditSubject = (subject: Subject) => {
+    setIsEditMode(true);
+    setSelectedItem(subject);
+    setIsSubjectModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -453,7 +1019,7 @@ const Planning: React.FC = () => {
             Optimiser
           </button>
           <button 
-            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800"
             onClick={handleNewClass}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -490,10 +1056,12 @@ const Planning: React.FC = () => {
         <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="-mb-px flex space-x-8 px-6 overflow-x-auto">
             {[
-              { id: 'classes', label: 'Classes & Séries', icon: Building },
               { id: 'resources', label: 'Ressources', icon: MapPin },
+              { id: 'subjects', label: 'Matières', icon: BookOpen },
+              { id: 'classes', label: 'Classes & Séries', icon: Building },
               { id: 'teachers', label: 'Enseignants', icon: Users },
               { id: 'schedule', label: 'Emploi du temps', icon: Calendar },
+              { id: 'journal', label: 'Cahier Journal/Texte', icon: FileText },
               { id: 'availability', label: 'Disponibilités', icon: Clock },
               { id: 'hours', label: 'Heures de cours', icon: BarChart3 }
             ].map((tab) => {
@@ -517,80 +1085,6 @@ const Planning: React.FC = () => {
         </div>
 
         <div className="p-6">
-          {activeTab === 'classes' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Gestion des classes et séries</h3>
-                <div className="flex space-x-2">
-                  <button className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <Filter className="w-4 h-4 mr-2" />
-                    Filtres
-                  </button>
-                  <button 
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800"
-                    onClick={handleNewClass}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nouvelle classe
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid gap-4">
-                {classesData.map((classItem) => (
-                  <div key={classItem.id} className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-900/30 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
-                          <Building className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">{classItem.name}</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">Niveau: {classItem.level} • Prof principal: {classItem.mainTeacher}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-500">Salle: {classItem.classroom}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="text-right">
-                        <div className="flex items-center space-x-4">
-                          <div className="text-center">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Effectif</p>
-                            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{classItem.enrolled}/{classItem.capacity}</p>
-                            <div className="w-16 progress-bar-container mt-1">
-                                <div 
-                                className={`progress-bar-fill progress-bar-fill-blue w-${Math.round((classItem.enrolled / classItem.capacity) * 100 / 10) * 10}`}
-                              ></div>
-                            </div>
-                          </div>
-                          
-                          <div className="text-center">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Matières</p>
-                            <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{classItem.subjects.length}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex space-x-2 mt-4">
-                          <button 
-                            className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50"
-                            onClick={() => handleEditClass(classItem)}
-                          >
-                            Modifier
-                          </button>
-                          <button 
-                            className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-900/50"
-                            onClick={() => handleAssignStudents(classItem)}
-                          >
-                            Affecter élèves
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {activeTab === 'resources' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
@@ -601,7 +1095,7 @@ const Planning: React.FC = () => {
                     onClick={handleManageRooms}
                   >
                     <MapPin className="w-4 h-4 mr-2" />
-                    Gérer les salles
+                    Créer les salles
                   </button>
                   <button 
                     className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -655,7 +1149,7 @@ const Planning: React.FC = () => {
                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{resource.nextReservation}</p>
                         <div className="flex space-x-2 mt-2">
                           <button 
-                            className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-800"
+                            className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50"
                             onClick={() => handleNewReservation(resource)}
                           >
                             Réserver
@@ -665,6 +1159,243 @@ const Planning: React.FC = () => {
                             onClick={() => handleOpenResourcePlanning(resource)}
                           >
                             Planning
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'subjects' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Gestion des matières</h3>
+                <div className="flex space-x-2">
+                  <button 
+                    className="inline-flex items-center px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-800"
+                    onClick={handleNewSubject}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nouvelle matière
+                  </button>
+                </div>
+              </div>
+
+              {/* Filtres par niveau */}
+              <div className="flex flex-wrap gap-2">
+                <button 
+                  className={`px-3 py-1 rounded-lg text-sm font-medium ${selectedEducationLevel === null ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                  onClick={() => setSelectedEducationLevel(null)}
+                  aria-label="Afficher toutes les matières, tous niveaux confondus"
+                  title="Afficher toutes les matières, tous niveaux confondus"
+                >
+                  Tous les niveaux
+                </button>
+                {educationLevels.map(level => (
+                  <button 
+                    key={level.id}
+                    className={`px-3 py-1 rounded-lg text-sm ${selectedEducationLevel === level.name ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                    onClick={() => setSelectedEducationLevel(level.name)}
+                    aria-label={`Filtrer les matières du niveau ${level.name}`}
+                    title={`Filtrer les matières du niveau ${level.name}`}
+                  >
+                    {level.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Liste des matières */}
+              <div className="grid gap-4">
+                {subjectsData
+                  .filter(subject => {
+                    if (selectedEducationLevel === null) return true;
+                    
+                    // Vérifier si la matière s'applique au niveau sélectionné
+                    if (subject.level === selectedEducationLevel) return true;
+                    if (subject.level === 'Tous niveaux') return true;
+                    if (subject.level === 'Primaire et Secondaire' && 
+                        (selectedEducationLevel === 'Primaire' || selectedEducationLevel === 'Secondaire')) return true;
+                    if (subject.level.includes(selectedEducationLevel)) return true;
+                    
+                    // Vérifier si la matière a des heures définies pour ce niveau
+                    return subject.hoursPerWeek[selectedEducationLevel] !== undefined;
+                  })
+                  .map((subject) => (
+                  <div key={subject.id} className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-900/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full flex items-center justify-center">
+                          <BookOpen className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">{subject.name} {subject.abbreviation && <span className="text-gray-600 dark:text-gray-400">({subject.abbreviation})</span>}</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Niveau: {subject.level} • Département: {subject.department}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-500">Enseignants: {subject.teachers.join(', ')}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <div className="flex flex-col space-y-2">
+                          <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Heures hebdomadaires</p>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {Object.entries(subject.hoursPerWeek).map(([level, hours]) => (
+                                <span key={level} className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded text-xs">
+                                  {level}: {hours}h
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          {/* Affichage du coefficient pour les matières du secondaire */}
+                          {(subject.level === 'Secondaire' || subject.level === 'Tous niveaux' || subject.level === 'Primaire et Secondaire') && (
+                            <div className="mt-2">
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Coefficient (Secondaire)</p>
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded text-xs font-semibold">
+                                  Coef. {subject.coefficient}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="flex space-x-2 mt-2">
+                            <button 
+                              className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50"
+                              onClick={() => handleEditSubject(subject)}
+                            >
+                              Modifier
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Espace réservé pour de futures fonctionnalités */}
+            </div>
+          )}
+
+          {activeTab === 'classes' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Gestion des classes et séries</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button 
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={() => setIsClassFilterModalOpen(true)}
+                  >
+                    <Filter className="w-4 h-4 mr-2" />
+                    Filtres
+                  </button>
+                  <button 
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800"
+                    onClick={handleNewClass}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nouvelle classe
+                  </button>
+                </div>
+              </div>
+              
+              {/* Filtres actifs */}
+              <div className="flex flex-wrap gap-2 items-center">
+                {(classFilters.level || classFilters.occupancyRate !== 'all' || classFilters.hasSubjects !== 'all') && (
+                  <>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Filtres actifs:</span>
+                    
+                    {classFilters.level && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                        Niveau: {classFilters.level}
+                        <X 
+                          className="w-3 h-3 ml-1 cursor-pointer" 
+                          onClick={() => setClassFilters(prev => ({ ...prev, level: '' }))}
+                        />
+                      </span>
+                    )}
+                    
+                    {classFilters.occupancyRate !== 'all' && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                        Occupation: {classFilters.occupancyRate === 'low' ? 'Faible' : 
+                                    classFilters.occupancyRate === 'medium' ? 'Moyenne' : 
+                                    classFilters.occupancyRate === 'high' ? 'Élevée' : 'Complète'}
+                        <X 
+                          className="w-3 h-3 ml-1 cursor-pointer" 
+                          onClick={() => setClassFilters(prev => ({ ...prev, occupancyRate: 'all' }))}
+                        />
+                      </span>
+                    )}
+                    
+                    {classFilters.hasSubjects !== 'all' && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
+                        Matières: {classFilters.hasSubjects === 'yes' ? 'Avec matières' : 'Sans matières'}
+                        <X 
+                          className="w-3 h-3 ml-1 cursor-pointer" 
+                          onClick={() => setClassFilters(prev => ({ ...prev, hasSubjects: 'all' }))}
+                        />
+                      </span>
+                    )}
+                    
+                    <button 
+                      className="inline-flex items-center px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                      onClick={() => setClassFilters({ level: '', occupancyRate: 'all', hasSubjects: 'all' })}
+                    >
+                      Effacer tous les filtres
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="grid gap-4">
+                {filteredClassesData.map((classItem) => (
+                  <div key={classItem.id} className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-900/30 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+                          <Building className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">{classItem.name}</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Niveau: {classItem.level} • Prof principal: {classItem.mainTeacher}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-500">Salle: {classItem.classroom}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <div className="flex items-center space-x-4">
+                          <div className="text-center">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Effectif</p>
+                            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{classItem.enrolled}/{classItem.capacity}</p>
+                            <div className="w-16 progress-bar-container mt-1">
+                                <div 
+                                className={`progress-bar-fill progress-bar-fill-blue w-${Math.round((classItem.enrolled / classItem.capacity) * 100 / 10) * 10}`}
+                              ></div>
+                            </div>
+                          </div>
+                          
+                          <div className="text-center">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Matières</p>
+                            <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{classItem.subjects.length}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-2 mt-4">
+                          <button 
+                            className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50"
+                            onClick={() => handleEditClass(classItem)}
+                          >
+                            Modifier
+                          </button>
+                          <button 
+                            className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-900/50"
+                            onClick={() => handleAssignStudents(classItem)}
+                          >
+                            Affecter élèves
                           </button>
                         </div>
                       </div>
@@ -725,7 +1456,11 @@ const Planning: React.FC = () => {
                         </div>
                         
                         <div className="flex space-x-2 mt-4">
-                          <button className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50">
+                          <button
+                            className="px-3 py-1.5 text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
+                            onClick={() => handleTeacherSchedule(teacher)}
+                            title="Voir le planning de l'enseignant"
+                          >
                             Planning
                           </button>
                           <button 
@@ -746,11 +1481,45 @@ const Planning: React.FC = () => {
           {activeTab === 'schedule' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Emploi du temps - 6ème A</h3>
+                <div className="flex items-center space-x-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Emploi du temps</h3>
+                  <select
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-800 dark:text-gray-200"
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                    aria-label="Sélectionner une classe"
+                    title="Sélectionner une classe"
+                  >
+                    {classesData.map((cls) => (
+                      <option key={cls.id} value={cls.name}>
+                        {cls.name} ({cls.level})
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="flex space-x-2">
-                  <button className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <button 
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={() => setIsBreakTimeModalOpen(true)}
+                  >
+                    <Clock className="w-4 h-4 mr-2" />
+                    Modifier les pauses
+                  </button>
+                  <button 
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={handleGenerateSchedules}
+                  >
                     <Settings className="w-4 h-4 mr-2" />
                     Générer auto
+                  </button>
+                  <button 
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={() => setIsPrintModalOpen(true)}
+                    aria-label="Imprimer l'emploi du temps"
+                    title="Imprimer l'emploi du temps"
+                  >
+                    <Printer className="w-4 h-4 mr-2" />
+                    Imprimer
                   </button>
                   <button 
                     className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800"
@@ -782,29 +1551,45 @@ const Planning: React.FC = () => {
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Jeudi
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Vendredi
-                        </th>
+                        <th className="px-4 py-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100 border-b dark:border-gray-700">Vendredi</th>
+                        <th className="px-4 py-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100 border-b dark:border-gray-700">Samedi</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {scheduleData.map((slot, index) => (
-                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
-                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                        <tr key={index} className={`${slot.isBreak ? 'bg-amber-50 dark:bg-amber-900/20' : ''} hover:bg-gray-50 dark:hover:bg-gray-900/50`}>
+                          <td className={`px-4 py-4 whitespace-nowrap text-sm font-medium ${slot.isBreak ? 'text-amber-700 dark:text-amber-400' : 'text-gray-900 dark:text-gray-100'}`}>
                             {slot.time}
+                            {slot.isBreak && <span className="block text-xs font-medium">{slot.label}</span>}
                           </td>
-                          {['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].map((day) => {
+                          {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].map((day) => {
                             const course = slot[day as keyof typeof slot] as any;
                             return (
                               <td key={day} className="px-4 py-4 whitespace-nowrap">
-                                {course && (
+                                {course && course.isBreak ? (
+                                  <div className="bg-amber-100 dark:bg-amber-900/20 rounded-lg p-2 border-l-4 border-amber-500 dark:border-amber-700">
+                                    <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Pause</p>
+                                  </div>
+                                ) : course && (
                                   <div 
-                                    className="bg-blue-100 dark:bg-blue-900/30 rounded-lg p-2 border-l-4 border-blue-500 dark:border-blue-400 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-900/50"
-                                    onClick={handleNewScheduleEntry}
+                                    className={`rounded-lg p-2 cursor-pointer hover:opacity-90 transition-opacity ${
+                                      course.subject === 'Français' ? 'bg-blue-100 border-l-4 border-blue-500' :
+                                      course.subject === 'Mathématiques' ? 'bg-purple-100 border-l-4 border-purple-500' :
+                                      course.subject === 'Histoire-Géo' ? 'bg-green-100 border-l-4 border-green-500' :
+                                      course.subject === 'Anglais' ? 'bg-yellow-100 border-l-4 border-yellow-500' :
+                                      course.subject === 'SVT' ? 'bg-pink-100 border-l-4 border-pink-500' :
+                                      course.subject === 'Sport' ? 'bg-orange-100 border-l-4 border-orange-500' :
+                                      course.subject === 'Physique' ? 'bg-red-100 border-l-4 border-red-500' :
+                                      'bg-gray-100 border-l-4 border-gray-500'
+                                    } dark:bg-gray-900/30 dark:border-gray-700`}
+                                    onClick={() => {
+                                      setSelectedItem(course);
+                                      setIsScheduleEntryModalOpen(true);
+                                    }}
                                   >
-                                    <p className="text-sm font-medium text-blue-900 dark:text-blue-300">{course.subject}</p>
-                                    <p className="text-xs text-blue-700 dark:text-blue-400">{course.teacher}</p>
-                                    <p className="text-xs text-blue-600 dark:text-blue-500">{course.room}</p>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{course.subject}</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400">{course.teacher}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-500">{course.room}</p>
                                   </div>
                                 )}
                               </td>
@@ -814,6 +1599,82 @@ const Planning: React.FC = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+
+              {/* Indicateurs de conflits */}
+              <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <div className="flex items-center space-x-3">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">Conflits potentiels</h4>
+                    <ul className="mt-2 space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                      {scheduleData.map((slot, index) => {
+                        const conflicts = {};
+                        const daySlots = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+                        
+                        // Vérifier les conflits de salle dans tous les emplois du temps
+                        const rooms = new Set();
+                        daySlots.forEach(day => {
+                          const course = slot[day as keyof typeof slot];
+                          if (course && course.room) {
+                            // Vérifier les conflits dans les autres classes à la même heure
+                            Object.entries(classSchedules).forEach(([className, classSchedule]) => {
+                              if (className !== selectedClass && classSchedule[index]) {
+                                const otherCourse = classSchedule[index][day as keyof typeof slot];
+                                if (otherCourse && otherCourse.room === course.room) {
+                                  conflicts[`${course.room} (avec ${className})`] = true;
+                                }
+                              }
+                            });
+                            
+                            // Vérifier les conflits dans la même classe
+                            if (rooms.has(course.room)) {
+                              conflicts[course.room] = true;
+                            }
+                            rooms.add(course.room);
+                          }
+                        });
+
+                        // Vérifier les conflits d'enseignant
+                        const teachers = new Set();
+                        daySlots.forEach(day => {
+                          const course = slot[day as keyof typeof slot];
+                          if (course && course.teacher) {
+                            // Vérifier les conflits dans les autres classes à la même heure
+                            Object.entries(classSchedules).forEach(([className, classSchedule]) => {
+                              if (className !== selectedClass && classSchedule[index]) {
+                                const otherCourse = classSchedule[index][day as keyof typeof slot];
+                                if (otherCourse && otherCourse.teacher === course.teacher) {
+                                  conflicts[`${course.teacher} (avec ${className})`] = true;
+                                }
+                              }
+                            });
+                            
+                            // Vérifier les conflits dans la même classe
+                            if (teachers.has(course.teacher)) {
+                              conflicts[course.teacher] = true;
+                            }
+                            teachers.add(course.teacher);
+                          }
+                        });
+
+                        if (Object.keys(conflicts).length > 0) {
+                          return (
+                            <li key={index}>
+                              <span className="font-medium">{slot.time}:</span>
+                              {Object.entries(conflicts).map(([entity, _]) => (
+                                <span key={entity} className="ml-2">
+                                  <span className="text-yellow-600 dark:text-yellow-400">⚠️</span> {entity} en double
+                                </span>
+                              ))}
+                            </li>
+                          );
+                        }
+                        return null;
+                      }).filter(Boolean)}
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
@@ -954,13 +1815,381 @@ const Planning: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <ClassModal
+      {/* Modal pour configurer les heures de pause */}
+      <FormModal
+        isOpen={isBreakTimeModalOpen}
+        onClose={() => setIsBreakTimeModalOpen(false)}
+        title="Configuration des heures de pause"
+        footer={
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              onClick={() => setIsBreakTimeModalOpen(false)}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-800"
+              onClick={() => {
+                setIsBreakTimeModalOpen(false);
+                setAlertMessage({
+                  title: 'Pauses mises à jour',
+                  message: 'Les horaires de pause ont été mis à jour avec succès.',
+                  type: 'success'
+                });
+                setIsAlertModalOpen(true);
+              }}
+            >
+              Enregistrer
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Récréation du matin</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Début</label>
+                <input
+                  type="time"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
+                  value={breakTimes.morning.start}
+                  onChange={(e) => setBreakTimes(prev => ({
+                    ...prev,
+                    morning: { ...prev.morning, start: e.target.value }
+                  }))}
+                  aria-label="Heure de début de la récréation du matin"
+                  title="Heure de début de la récréation du matin"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Fin</label>
+                <input
+                  type="time"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
+                  value={breakTimes.morning.end}
+                  onChange={(e) => setBreakTimes(prev => ({
+                    ...prev,
+                    morning: { ...prev.morning, end: e.target.value }
+                  }))}
+                  aria-label="Heure de fin de la récréation du matin"
+                  title="Heure de fin de la récréation du matin"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Pause déjeuner</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Début</label>
+                <input
+                  type="time"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
+                  value={breakTimes.lunch.start}
+                  onChange={(e) => setBreakTimes(prev => ({
+                    ...prev,
+                    lunch: { ...prev.lunch, start: e.target.value }
+                  }))}
+                  aria-label="Heure de début de la pause déjeuner"
+                  title="Heure de début de la pause déjeuner"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Fin</label>
+                <input
+                  type="time"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
+                  value={breakTimes.lunch.end}
+                  onChange={(e) => setBreakTimes(prev => ({
+                    ...prev,
+                    lunch: { ...prev.lunch, end: e.target.value }
+                  }))}
+                  aria-label="Heure de fin de la pause déjeuner"
+                  title="Heure de fin de la pause déjeuner"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Récréation de l'après-midi</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Début</label>
+                <input
+                  type="time"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
+                  value={breakTimes.afternoon.start}
+                  onChange={(e) => setBreakTimes(prev => ({
+                    ...prev,
+                    afternoon: { ...prev.afternoon, start: e.target.value }
+                  }))}
+                  aria-label="Heure de début de la récréation de l'après-midi"
+                  title="Heure de début de la récréation de l'après-midi"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Fin</label>
+                <input
+                  type="time"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
+                  value={breakTimes.afternoon.end}
+                  onChange={(e) => setBreakTimes(prev => ({
+                    ...prev,
+                    afternoon: { ...prev.afternoon, end: e.target.value }
+                  }))}
+                  aria-label="Heure de fin de la récréation de l'après-midi"
+                  title="Heure de fin de la récréation de l'après-midi"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Libellés des pauses</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Récréation matin</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
+                  value={breakTimes.morning.label}
+                  onChange={(e) => setBreakTimes(prev => ({
+                    ...prev,
+                    morning: { ...prev.morning, label: e.target.value }
+                  }))}
+                  aria-label="Libellé de la récréation du matin"
+                  title="Libellé de la récréation du matin"
+                  placeholder="Libellé affiché dans l'emploi du temps"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Pause déjeuner</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
+                  value={breakTimes.lunch.label}
+                  onChange={(e) => setBreakTimes(prev => ({
+                    ...prev,
+                    lunch: { ...prev.lunch, label: e.target.value }
+                  }))}
+                  aria-label="Libellé de la pause déjeuner"
+                  title="Libellé de la pause déjeuner"
+                  placeholder="Libellé affiché dans l'emploi du temps"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Récréation après-midi</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
+                  value={breakTimes.afternoon.label}
+                  onChange={(e) => setBreakTimes(prev => ({
+                    ...prev,
+                    afternoon: { ...prev.afternoon, label: e.target.value }
+                  }))}
+                  aria-label="Libellé de la récréation de l'après-midi"
+                  title="Libellé de la récréation de l'après-midi"
+                  placeholder="Libellé affiché dans l'emploi du temps"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </FormModal>
+      
+      {/* Modal d'impression */}
+      <FormModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        title="Imprimer l'emploi du temps"
+        size="sm"
+        footer={
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              onClick={() => setIsPrintModalOpen(false)}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-800"
+              onClick={printSchedule}
+            >
+              Imprimer
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700 dark:text-gray-300">
+            Vous êtes sur le point d'imprimer l'emploi du temps de la classe <strong>{selectedClass}</strong>.
+          </p>
+          
+          <div className="space-y-3">
+            <div className="flex items-center">
+              <input type="checkbox" id="includeLogo" className="rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500 dark:bg-gray-800" defaultChecked />
+              <label htmlFor="includeLogo" className="ml-2 text-sm text-gray-700 dark:text-gray-300">Inclure le logo de l'établissement</label>
+            </div>
+            <div className="flex items-center">
+              <input type="checkbox" id="includeFooter" className="rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500 dark:bg-gray-800" defaultChecked />
+              <label htmlFor="includeFooter" className="ml-2 text-sm text-gray-700 dark:text-gray-300">Inclure les informations en pied de page</label>
+            </div>
+          </div>
+          
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              Une nouvelle fenêtre va s'ouvrir avec la version imprimable de l'emploi du temps.
+            </p>
+          </div>
+        </div>
+      </FormModal>
+      
+      {/* Modal de confirmation pour la génération d'emploi du temps */}
+      <FormModal
+        isOpen={isScheduleGenerationModalOpen}
+        onClose={() => setIsScheduleGenerationModalOpen(false)}
+        title="Génération automatique des emplois du temps"
+        size="md"
+        footer={
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              onClick={() => setIsScheduleGenerationModalOpen(false)}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-800"
+              onClick={generateSchedules}
+              disabled={isGeneratingSchedule}
+            >
+              {isGeneratingSchedule ? 'Génération en cours...' : 'Générer les emplois du temps'}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700 dark:text-gray-300">
+            Cette action va générer automatiquement les emplois du temps pour toutes les classes en fonction des enseignants disponibles et des matières assignées.
+          </p>
+          
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-md border border-yellow-200 dark:border-yellow-900/30">
+            <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-400 mb-2">Attention</h4>
+            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+              La génération automatique peut écraser certaines entrées existantes dans les emplois du temps. Les pauses configurées seront préservées.
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Paramètres de génération</h4>
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <input type="checkbox" id="respectTeacherAvailability" className="rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500 dark:bg-gray-800" defaultChecked />
+                <label htmlFor="respectTeacherAvailability" className="ml-2 text-sm text-gray-700 dark:text-gray-300">Respecter les disponibilités des enseignants</label>
+              </div>
+              <div className="flex items-center">
+                <input type="checkbox" id="avoidConflicts" className="rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500 dark:bg-gray-800" defaultChecked />
+                <label htmlFor="avoidConflicts" className="ml-2 text-sm text-gray-700 dark:text-gray-300">Éviter les conflits de salles</label>
+              </div>
+              <div className="flex items-center">
+                <input type="checkbox" id="balanceSubjects" className="rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500 dark:bg-gray-800" defaultChecked />
+                <label htmlFor="balanceSubjects" className="ml-2 text-sm text-gray-700 dark:text-gray-300">Équilibrer les matières sur la semaine</label>
+              </div>
+              <div className="flex items-center">
+                <input type="checkbox" id="includeSaturday" className="rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500 dark:bg-gray-800" defaultChecked />
+                <label htmlFor="includeSaturday" className="ml-2 text-sm text-gray-700 dark:text-gray-300">Inclure le samedi dans la planification</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </FormModal>
+
+      <ClassModal 
         isOpen={isClassModalOpen}
         onClose={() => setIsClassModalOpen(false)}
         onSave={handleSaveClass}
         classData={selectedItem}
         isEdit={isEditMode}
       />
+      
+      {/* Modal de filtres pour les classes */}
+      <FormModal
+        isOpen={isClassFilterModalOpen}
+        onClose={() => setIsClassFilterModalOpen(false)}
+        title="Filtrer les classes"
+        submitLabel="Appliquer les filtres"
+        onSubmit={() => setIsClassFilterModalOpen(false)}
+        size="md"
+        icon={Filter}
+      >
+        <form className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="level" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Niveau d'éducation
+              </label>
+              <select
+                id="level"
+                name="level"
+                value={classFilters.level}
+                onChange={(e) => setClassFilters(prev => ({ ...prev, level: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="">Tous les niveaux</option>
+                {educationLevels.map(level => (
+                  <option key={level.id} value={level.name}>{level.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="occupancyRate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Taux d'occupation
+              </label>
+              <select
+                id="occupancyRate"
+                name="occupancyRate"
+                value={classFilters.occupancyRate}
+                onChange={(e) => setClassFilters(prev => ({ ...prev, occupancyRate: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="all">Tous les taux</option>
+                <option value="low">Faible (&lt; 25%)</option>
+                <option value="medium">Moyen (25% - 50%)</option>
+                <option value="high">Élevé (50% - 90%)</option>
+                <option value="full">Complet (&gt; 90%)</option>
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="hasSubjects" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Matières
+              </label>
+              <select
+                id="hasSubjects"
+                name="hasSubjects"
+                value={classFilters.hasSubjects}
+                onChange={(e) => setClassFilters(prev => ({ ...prev, hasSubjects: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="all">Toutes les classes</option>
+                <option value="yes">Avec matières</option>
+                <option value="no">Sans matières</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </FormModal>
 
       <RoomReservationModal
         isOpen={isRoomReservationModalOpen}
@@ -988,6 +2217,12 @@ const Planning: React.FC = () => {
         teacherName={selectedItem?.name}
       />
 
+      <TeacherScheduleModal
+        isOpen={isTeacherScheduleModalOpen}
+        onClose={() => setIsTeacherScheduleModalOpen(false)}
+        teacher={selectedItem}
+      />
+
       <WorkHoursModal
         isOpen={isWorkHoursModalOpen}
         onClose={() => setIsWorkHoursModalOpen(false)}
@@ -1009,6 +2244,42 @@ const Planning: React.FC = () => {
         title={alertMessage.title}
         message={alertMessage.message}
         type={alertMessage.type}
+      />
+
+      <SubjectModal 
+        isOpen={isSubjectModalOpen}
+        onClose={() => setIsSubjectModalOpen(false)}
+        onSave={(subjectData) => {
+          // Ici, vous pourriez sauvegarder les données de la matière
+          console.log('Données de la matière:', subjectData);
+          
+          // Si nous sommes en mode édition, nous mettons à jour la matière existante
+          // Sinon, nous ajoutons une nouvelle matière
+          if (isEditMode && selectedItem) {
+            // Logique pour mettre à jour une matière existante
+            // Dans une application réelle, vous appelleriez une API ici
+            console.log('Mise à jour de la matière existante:', selectedItem.id);
+          } else {
+            // Logique pour ajouter une nouvelle matière
+            // Dans une application réelle, vous appelleriez une API ici
+            console.log('Création d\'une nouvelle matière');
+          }
+          
+          // Afficher un message de confirmation
+          setAlertMessage({
+            title: isEditMode ? 'Matière mise à jour' : 'Matière créée',
+            message: isEditMode 
+              ? `La matière ${subjectData.name} a été mise à jour avec succès.` 
+              : `La matière ${subjectData.name} a été créée avec succès.`,
+            type: 'success'
+          });
+          
+          // Fermer le modal de matière et ouvrir le modal d'alerte
+          setIsSubjectModalOpen(false);
+          setIsAlertModalOpen(true);
+        }}
+        subjectData={selectedItem}
+        isEdit={isEditMode}
       />
 
       <RoomManagementModal
