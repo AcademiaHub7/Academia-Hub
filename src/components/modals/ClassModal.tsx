@@ -44,7 +44,9 @@ const ClassModal: React.FC<ClassModalProps> = ({
     mainTeacherId: classData?.mainTeacherId || '',
     room: classData?.room || '',
     description: classData?.description || '',
-    isActive: classData?.isActive !== undefined ? classData.isActive : true
+    isActive: classData?.isActive !== undefined ? classData.isActive : true,
+    subjectsCount: classData?.subjects?.length || 0,
+    selectedSubjects: classData?.subjects || []
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -242,6 +244,43 @@ const ClassModal: React.FC<ClassModalProps> = ({
                 </label>
               </div>
             </div>
+          </div>
+        </div>
+        
+        {/* Section des matières */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+            <BookOpen className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" />
+            Matières enseignées
+          </h4>
+          
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="subjectsCount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nombre de matières*
+              </label>
+              <input
+                type="number"
+                id="subjectsCount"
+                name="subjectsCount"
+                value={formData.subjectsCount}
+                onChange={handleChange}
+                required
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Indiquez le nombre de matières enseignées dans cette classe
+              </p>
+            </div>
+            
+            {formData.subjectsCount > 0 && (
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                  Ce nombre sera affiché dans la liste des classes. Pour associer des matières spécifiques, vous pourrez le faire après avoir créé ou modifié la classe.
+                </p>
+              </div>
+            )}
           </div>
         </div>
         

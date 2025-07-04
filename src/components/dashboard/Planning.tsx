@@ -62,6 +62,20 @@ const Planning: React.FC = () => {
   const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
   const [isScheduleGenerationModalOpen, setIsScheduleGenerationModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [isJournalEntryModalOpen, setIsJournalEntryModalOpen] = useState(false);
+  const [selectedJournalEntry, setSelectedJournalEntry] = useState<any>(null);
+  const [selectedTextbookEntry, setSelectedTextbookEntry] = useState<any>(null);
+  const [journalFilter, setJournalFilter] = useState({
+    class: '',
+    subject: '',
+    period: 'all' // 'all', 'today', 'week', 'month'
+  });
+  const [textbookFilter, setTextbookFilter] = useState({
+    class: '',
+    subject: '',
+    period: 'all' // 'all', 'today', 'week', 'month'
+  });
+  const [isTextbookEntryModalOpen, setIsTextbookEntryModalOpen] = useState(false);
   
   // Modals state
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
@@ -94,6 +108,134 @@ const Planning: React.FC = () => {
     hasSubjects: 'all' // 'all', 'yes', 'no'
   });
 
+  // Données factices pour le cahier journal
+  const [journalEntriesData, setJournalEntriesData] = useState([
+    {
+      id: 'JRN-2024-001',
+      date: '2025-07-01',
+      class: '6ème A',
+      subject: 'Français',
+      teacher: 'Marie Dubois',
+      title: 'Étude de texte - Les Fables de La Fontaine',
+      content: 'Lecture et analyse de la fable "Le Corbeau et le Renard". Travail sur le vocabulaire et la morale de l\'histoire. Exercices d\'application sur les figures de style.',
+      homework: '',
+      resources: ['Manuel p.45-47', 'Fiche d\'exercices distribuée en classe'],
+      status: 'completed'
+    },
+    {
+      id: 'JRN-2024-002',
+      date: '2025-07-02',
+      class: '5ème B',
+      subject: 'Mathématiques',
+      teacher: 'Pierre Martin',
+      title: 'Théorème de Pythagore - Introduction',
+      content: 'Présentation du théorème de Pythagore. Démonstration géométrique. Exercices d\'application simples sur des triangles rectangles.',
+      homework: 'Exercices 1 à 5 page 112 du manuel.',
+      resources: ['Manuel p.110-115', 'Vidéo explicative partagée sur l\'ENT'],
+      status: 'completed'
+    },
+    {
+      id: 'JRN-2024-003',
+      date: '2025-07-03',
+      class: 'Terminale S',
+      subject: 'Physique-Chimie',
+      teacher: 'Jean Moreau',
+      title: 'Réactions d\'oxydo-réduction',
+      content: 'Cours sur les réactions d\'oxydo-réduction. Définition des notions d\'oxydant et de réducteur. Équilibrage des équations redox. TP sur la pile Daniell.',
+      homework: 'Préparer l\'exercice type bac p.245',
+      resources: ['Manuel p.240-248', 'Protocole de TP distribué'],
+      status: 'completed'
+    },
+    {
+      id: 'JRN-2024-004',
+      date: '2025-07-04',
+      class: '6ème A',
+      subject: 'Anglais',
+      teacher: 'Sophie Laurent',
+      title: 'Present continuous - Practice',
+      content: 'Révision de la formation du present continuous. Exercices d\'application à l\'oral et à l\'écrit. Jeu de rôle par groupes de deux.',
+      homework: 'Workbook p.28 ex.3-4',
+      resources: ['Student\'s book p.34-35', 'Audio tracks 15-16'],
+      status: 'in-progress'
+    },
+    {
+      id: 'JRN-2024-005',
+      date: '2025-07-08',
+      class: 'Terminale S',
+      subject: 'Mathématiques',
+      teacher: 'Pierre Martin',
+      title: 'Révisions - Fonctions exponentielles',
+      content: 'Séance de révision sur les fonctions exponentielles et logarithmes. Rappels théoriques et exercices type bac.',
+      homework: 'Terminer les exercices commencés en classe',
+      resources: ['Polycopié de révision', 'Annales BAC 2024'],
+      status: 'planned'
+    }
+  ]);
+
+  // Données factices pour le cahier de textes
+  const [textbookEntriesData, setTextbookEntriesData] = useState([
+    {
+      id: 'TXT-2024-001',
+      date: '2025-07-01',
+      class: '6ème A',
+      subject: 'Français',
+      teacher: 'Marie Dubois',
+      title: 'Les Fables de La Fontaine',
+      content: '',
+      homework: 'Apprendre la fable "Le Corbeau et le Renard" par cœur pour la récitation de la semaine prochaine.',
+      resources: ['Manuel p.45-47'],
+      status: 'completed'
+    },
+    {
+      id: 'TXT-2024-002',
+      date: '2025-07-02',
+      class: '5ème B',
+      subject: 'Mathématiques',
+      teacher: 'Pierre Martin',
+      title: 'Théorème de Pythagore',
+      content: '',
+      homework: 'Exercices 1 à 5 page 112 du manuel. À rendre pour le prochain cours.',
+      resources: ['Manuel p.110-115'],
+      status: 'completed'
+    },
+    {
+      id: 'TXT-2024-003',
+      date: '2025-07-03',
+      class: 'Terminale S',
+      subject: 'Physique-Chimie',
+      teacher: 'Jean Moreau',
+      title: 'Réactions d\'oxydo-réduction',
+      content: '',
+      homework: 'Préparer l\'exercice type bac p.245 pour le prochain cours. Réviser les définitions d\'oxydant et réducteur.',
+      resources: ['Manuel p.240-248'],
+      status: 'completed'
+    },
+    {
+      id: 'TXT-2024-004',
+      date: '2025-07-04',
+      class: '6ème A',
+      subject: 'Anglais',
+      teacher: 'Sophie Laurent',
+      title: 'Present continuous',
+      content: '',
+      homework: 'Workbook p.28 ex.3-4. Préparer une description de 5 lignes en utilisant le present continuous.',
+      resources: ['Student\'s book p.34-35'],
+      status: 'in-progress'
+    },
+    {
+      id: 'TXT-2024-005',
+      date: '2025-07-08',
+      class: 'Terminale S',
+      subject: 'Mathématiques',
+      teacher: 'Pierre Martin',
+      title: 'Fonctions exponentielles',
+      content: '',
+      homework: 'Terminer les exercices commencés en classe. Préparer les annales p.45-48.',
+      resources: ['Polycopié de révision', 'Annales BAC 2024'],
+      status: 'planned'
+    }
+  ]);
+  
   // Données factices pour les élèves
   const studentsData = [
     { id: 'STD001', firstName: 'Jean', lastName: 'Dupont', classId: 'CLS001', status: 'active' },
@@ -682,6 +824,219 @@ const Planning: React.FC = () => {
     setIsScheduleGenerationModalOpen(true);
   };
   
+  // Gestion du cahier journal
+  const handleAddJournalEntry = () => {
+    setSelectedJournalEntry(null);
+    setIsJournalEntryModalOpen(true);
+  };
+
+  const handleEditJournalEntry = (entry: any) => {
+    setSelectedJournalEntry(entry);
+    setIsJournalEntryModalOpen(true);
+  };
+
+  const handleDeleteJournalEntry = (entryId: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette entrée du cahier journal ?')) {
+      const updatedEntries = journalEntriesData.filter(entry => entry.id !== entryId);
+      setJournalEntriesData(updatedEntries);
+      
+      setAlertMessage({
+        title: 'Entrée supprimée',
+        message: 'L\'entrée du cahier journal a été supprimée avec succès.',
+        type: 'success'
+      });
+      setIsAlertModalOpen(true);
+    }
+  };
+
+  const handleSaveJournalEntry = (entryData: any) => {
+    // Traitement des ressources si elles sont fournies sous forme de chaîne
+    let resources = entryData.resources;
+    if (typeof resources === 'string') {
+      resources = resources.split(',').map(item => item.trim()).filter(item => item !== '');
+    } else if (!Array.isArray(resources)) {
+      resources = [];
+    }
+    
+    // Création ou mise à jour de l'entrée
+    const updatedEntry = {
+      ...entryData,
+      resources,
+      id: selectedJournalEntry ? selectedJournalEntry.id : `JRN-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`
+    };
+    
+    // Mise à jour des données
+    if (selectedJournalEntry) {
+      // Mise à jour d'une entrée existante
+      const updatedEntries = journalEntriesData.map(entry => 
+        entry.id === selectedJournalEntry.id ? updatedEntry : entry
+      );
+      // Dans un environnement réel, vous enverriez ces données à votre API
+      console.log('Entrées mises à jour:', updatedEntries);
+      setJournalEntriesData(updatedEntries);
+    } else {
+      // Ajout d'une nouvelle entrée
+      const newEntries = [updatedEntry, ...journalEntriesData];
+      // Dans un environnement réel, vous enverriez ces données à votre API
+      console.log('Nouvelles entrées:', newEntries);
+      setJournalEntriesData(newEntries);
+    }
+    
+    // Fermeture du modal et affichage du message de confirmation
+    setIsJournalEntryModalOpen(false);
+    setAlertMessage({
+      title: selectedJournalEntry ? 'Entrée modifiée' : 'Nouvelle entrée ajoutée',
+      message: selectedJournalEntry 
+        ? 'L\'entrée du cahier journal a été modifiée avec succès.' 
+        : 'Une nouvelle entrée a été ajoutée au cahier journal.',
+      type: 'success'
+    });
+    setIsAlertModalOpen(true);
+  };
+  
+  // Gestion du cahier de textes
+  const handleAddTextbookEntry = () => {
+    setSelectedTextbookEntry(null);
+    setIsTextbookEntryModalOpen(true);
+  };
+
+  const handleEditTextbookEntry = (entry: any) => {
+    setSelectedTextbookEntry(entry);
+    setIsTextbookEntryModalOpen(true);
+  };
+
+  const handleDeleteTextbookEntry = (entryId: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette entrée du cahier de textes ?')) {
+      const updatedEntries = textbookEntriesData.filter(entry => entry.id !== entryId);
+      setTextbookEntriesData(updatedEntries);
+      
+      setAlertMessage({
+        title: 'Entrée supprimée',
+        message: 'L\'entrée du cahier de textes a été supprimée avec succès.',
+        type: 'success'
+      });
+      setIsAlertModalOpen(true);
+    }
+  };
+
+  const handleSaveTextbookEntry = (entryData: any) => {
+    // Traitement des ressources si elles sont fournies sous forme de chaîne
+    let resources = entryData.resources;
+    if (typeof resources === 'string') {
+      resources = resources.split(',').map(item => item.trim()).filter(item => item !== '');
+    } else if (!Array.isArray(resources)) {
+      resources = [];
+    }
+    
+    // Création ou mise à jour de l'entrée
+    const updatedEntry = {
+      ...entryData,
+      resources,
+      id: selectedTextbookEntry ? selectedTextbookEntry.id : `TXT-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`
+    };
+    
+    // Mise à jour des données
+    if (selectedTextbookEntry) {
+      // Mise à jour d'une entrée existante
+      const updatedEntries = textbookEntriesData.map(entry => 
+        entry.id === selectedTextbookEntry.id ? updatedEntry : entry
+      );
+      setTextbookEntriesData(updatedEntries);
+    } else {
+      // Ajout d'une nouvelle entrée
+      const newEntries = [updatedEntry, ...textbookEntriesData];
+      setTextbookEntriesData(newEntries);
+    }
+    
+    // Fermeture du modal et affichage du message de confirmation
+    setIsTextbookEntryModalOpen(false);
+    setAlertMessage({
+      title: selectedTextbookEntry ? 'Entrée modifiée' : 'Nouvelle entrée ajoutée',
+      message: selectedTextbookEntry 
+        ? 'L\'entrée du cahier de textes a été modifiée avec succès.' 
+        : 'Une nouvelle entrée a été ajoutée au cahier de textes.',
+      type: 'success'
+    });
+    setIsAlertModalOpen(true);
+  };
+  
+  // Filtrer les entrées du cahier de textes
+  const filteredTextbookEntries = useMemo(() => {
+    return textbookEntriesData.filter(entry => {
+      // Filtrer par classe
+      if (textbookFilter.class && entry.class !== textbookFilter.class) {
+        return false;
+      }
+      
+      // Filtrer par matière
+      if (textbookFilter.subject && entry.subject !== textbookFilter.subject) {
+        return false;
+      }
+      
+      // Filtrer par période
+      if (textbookFilter.period !== 'all') {
+        const entryDate = new Date(entry.date);
+        const today = new Date();
+        
+        if (textbookFilter.period === 'today') {
+          return entryDate.toDateString() === today.toDateString();
+        }
+        
+        if (textbookFilter.period === 'week') {
+          const weekStart = new Date(today);
+          weekStart.setDate(today.getDate() - today.getDay());
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          return entryDate >= weekStart && entryDate <= weekEnd;
+        }
+        
+        if (textbookFilter.period === 'month') {
+          return entryDate.getMonth() === today.getMonth() && entryDate.getFullYear() === today.getFullYear();
+        }
+      }
+      
+      return true;
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [textbookEntriesData, textbookFilter]);
+  
+  // Filtrer les entrées du cahier journal
+  const filteredJournalEntries = useMemo(() => {
+    return journalEntriesData.filter(entry => {
+      // Filtrer par classe
+      if (journalFilter.class && entry.class !== journalFilter.class) {
+        return false;
+      }
+      
+      // Filtrer par matière
+      if (journalFilter.subject && entry.subject !== journalFilter.subject) {
+        return false;
+      }
+      
+      // Filtrer par période
+      if (journalFilter.period !== 'all') {
+        const entryDate = new Date(entry.date);
+        const today = new Date();
+        
+        if (journalFilter.period === 'today') {
+          return entryDate.toDateString() === today.toDateString();
+        }
+        
+        if (journalFilter.period === 'week') {
+          const weekStart = new Date(today);
+          weekStart.setDate(today.getDate() - today.getDay() + 1); // Lundi de la semaine en cours
+          return entryDate >= weekStart;
+        }
+        
+        if (journalFilter.period === 'month') {
+          return entryDate.getMonth() === today.getMonth() && 
+                 entryDate.getFullYear() === today.getFullYear();
+        }
+      }
+      
+      return true;
+    });
+  }, [journalEntriesData, journalFilter]);
+  
   // Fonction pour imprimer l'emploi du temps
   const printSchedule = () => {
     // Fermer le modal d'impression
@@ -971,6 +1326,8 @@ const Planning: React.FC = () => {
     setIsAlertModalOpen(true);
   };
 
+  // Note: Les fonctions de gestion du cahier journal sont définies plus haut dans le fichier
+
   const handleSaveStudentAssignments = (selectedStudentIds: string[]) => {
     // Mettre à jour les données des élèves avec leur nouvelle classe
     const updatedStudents = studentsData.map(student => ({
@@ -1061,7 +1418,8 @@ const Planning: React.FC = () => {
               { id: 'classes', label: 'Classes & Séries', icon: Building },
               { id: 'teachers', label: 'Enseignants', icon: Users },
               { id: 'schedule', label: 'Emploi du temps', icon: Calendar },
-              { id: 'journal', label: 'Cahier Journal/Texte', icon: FileText },
+              { id: 'journal', label: 'Cahier journal', icon: FileText },
+              { id: 'textes', label: 'Cahier de textes', icon: Clipboard },
               { id: 'availability', label: 'Disponibilités', icon: Clock },
               { id: 'hours', label: 'Heures de cours', icon: BarChart3 }
             ].map((tab) => {
@@ -1741,16 +2099,214 @@ const Planning: React.FC = () => {
             </div>
           )}
 
+          {activeTab === 'journal' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Cahier Journal</h3>
+                <button 
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800"
+                  onClick={handleAddJournalEntry}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvelle entrée
+                </button>
+              </div>
+              
+              {/* Contenu de l'onglet cahier journal supprimé - à remplacer par la nouvelle implémentation */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
+                <FileText className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-3" />
+                <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">Contenu supprimé</h4>
+                <p className="text-gray-600 dark:text-gray-400">Le contenu de l'onglet Cahier Journal a été supprimé en attendant la nouvelle implémentation.</p>
+              </div>
+            </div>
+          )}
+          
+          {activeTab === 'textes' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Cahier de Textes</h3>
+                <button 
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800"
+                  onClick={handleAddTextbookEntry}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvelle entrée
+                </button>
+              </div>
+              
+              {/* Filtres */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label htmlFor="textbook-class-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Classe</label>
+                    <select
+                      id="textbook-class-filter"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
+                      value={textbookFilter.class}
+                      onChange={(e) => setTextbookFilter(prev => ({ ...prev, class: e.target.value }))}
+                    >
+                      <option value="">Toutes les classes</option>
+                      {Array.from(new Set(textbookEntriesData.map(entry => entry.class))).map(className => (
+                        <option key={className} value={className}>{className}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="textbook-subject-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Matière</label>
+                    <select
+                      id="textbook-subject-filter"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
+                      value={textbookFilter.subject}
+                      onChange={(e) => setTextbookFilter(prev => ({ ...prev, subject: e.target.value }))}
+                    >
+                      <option value="">Toutes les matières</option>
+                      {Array.from(new Set(textbookEntriesData.map(entry => entry.subject))).map(subject => (
+                        <option key={subject} value={subject}>{subject}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="textbook-period-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Période</label>
+                    <select
+                      id="textbook-period-filter"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
+                      value={textbookFilter.period}
+                      onChange={(e) => setTextbookFilter(prev => ({ ...prev, period: e.target.value as 'all' | 'today' | 'week' | 'month' }))}
+                    >
+                      <option value="all">Toutes les périodes</option>
+                      <option value="today">Aujourd'hui</option>
+                      <option value="week">Cette semaine</option>
+                      <option value="month">Ce mois</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Liste des entrées */}
+              <div className="space-y-4">
+                {filteredTextbookEntries.length === 0 ? (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
+                    <Clipboard className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-3" />
+                    <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">Aucune entrée trouvée</h4>
+                    <p className="text-gray-600 dark:text-gray-400">Aucune entrée ne correspond à vos critères de filtrage.</p>
+                  </div>
+                ) : (
+                  filteredTextbookEntries.map(entry => {
+                    // Formater la date en français
+                    const entryDate = new Date(entry.date);
+                    const formattedDate = new Intl.DateTimeFormat('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    }).format(entryDate);
+                    
+                    // Déterminer la couleur du statut
+                    let statusColor = '';
+                    let statusText = '';
+                    
+                    switch(entry.status) {
+                      case 'completed':
+                        statusColor = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+                        statusText = 'Terminé';
+                        break;
+                      case 'in-progress':
+                        statusColor = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+                        statusText = 'En cours';
+                        break;
+                      case 'planned':
+                        statusColor = 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+                        statusText = 'Planifié';
+                        break;
+                      default:
+                        statusColor = 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+                        statusText = 'Non défini';
+                    }
+                    
+                    return (
+                      <div key={entry.id} className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                          <div className="space-y-4 flex-1">
+                            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                              <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">{entry.title}</h4>
+                              <div className="flex flex-wrap gap-2">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
+                                  {formattedDate}
+                                </span>
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
+                                  {entry.class}
+                                </span>
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400">
+                                  {entry.subject}
+                                </span>
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
+                                  {statusText}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="prose prose-sm max-w-none dark:prose-invert">
+                              {entry.content && (
+                                <>
+                                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Contenu du cours</h5>
+                                  <p className="text-gray-600 dark:text-gray-400">{entry.content}</p>
+                                </>
+                              )}
+                              
+                              <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-3">Travail à faire</h5>
+                              <p className="text-gray-600 dark:text-gray-400">{entry.homework}</p>
+                              
+                              {entry.resources && entry.resources.length > 0 && (
+                                <>
+                                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-3">Ressources</h5>
+                                  <ul className="list-disc pl-5 text-gray-600 dark:text-gray-400">
+                                    {entry.resources.map((resource, index) => (
+                                      <li key={index}>{resource}</li>
+                                    ))}
+                                  </ul>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-row md:flex-col items-center md:items-end gap-2">
+                            <button
+                              onClick={() => handleEditTextbookEntry(entry)}
+                              className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                              aria-label="Modifier cette entrée"
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Modifier
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTextbookEntry(entry.id)}
+                              className="inline-flex items-center px-3 py-1.5 border border-red-300 dark:border-red-800 rounded-md text-sm text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+                              aria-label="Supprimer cette entrée"
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Supprimer
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+          
           {activeTab === 'hours' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Gestion des heures de cours</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Heures de cours</h3>
                 <button 
-                  className="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-700 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-800"
-                  onClick={handleWorkHours}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800"
+                  onClick={() => setIsWorkHoursModalOpen(true)}
                 >
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Saisir des heures
+                  <Clock className="w-4 h-4 mr-2" />
+                  Définir les heures
                 </button>
               </div>
 
@@ -2004,6 +2560,346 @@ const Planning: React.FC = () => {
       </FormModal>
       
       {/* Modal d'impression */}
+      {/* Modal d'ajout/modification d'entrée de journal */}
+      <FormModal
+        isOpen={isJournalEntryModalOpen}
+        onClose={() => setIsJournalEntryModalOpen(false)}
+        title={selectedJournalEntry ? "Modifier l'entrée" : "Nouvelle entrée de journal"}
+        size="lg"
+        footer={
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              onClick={() => setIsJournalEntryModalOpen(false)}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-800"
+              onClick={() => handleSaveJournalEntry({})}
+            >
+              {selectedJournalEntry ? "Enregistrer les modifications" : "Ajouter l'entrée"}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="journalTitle" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titre</label>
+              <input
+                type="text"
+                id="journalTitle"
+                className="mt-1 block w-full border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-800 dark:text-gray-200"
+                defaultValue={selectedJournalEntry?.title || ''}
+                placeholder="Titre de la séance"
+                aria-label="Titre de l'entrée"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="journalDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+              <input
+                type="date"
+                id="journalDate"
+                className="mt-1 block w-full border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-800 dark:text-gray-200"
+                defaultValue={selectedJournalEntry?.date || new Date().toISOString().split('T')[0]}
+                aria-label="Date de la séance"
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="journalClass" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Classe</label>
+              <select
+                id="journalClass"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-800 dark:text-gray-200"
+                defaultValue={selectedJournalEntry?.class || ''}
+                aria-label="Classe concernée"
+              >
+                <option value="">Sélectionner une classe</option>
+                {classesData.map((cls) => (
+                  <option key={cls.id} value={cls.name}>{cls.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="journalSubject" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Matière</label>
+              <select
+                id="journalSubject"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-800 dark:text-gray-200"
+                defaultValue={selectedJournalEntry?.subject || ''}
+                aria-label="Matière concernée"
+              >
+                <option value="">Sélectionner une matière</option>
+                {Array.from(new Set(journalEntriesData.map(entry => entry.subject))).map((subject) => (
+                  <option key={subject} value={subject}>{subject}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div>
+            <label htmlFor="journalContent" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contenu du cours</label>
+            <textarea
+              id="journalContent"
+              rows={5}
+              className="mt-1 block w-full border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-800 dark:text-gray-200"
+              defaultValue={selectedJournalEntry?.content || ''}
+              placeholder="Détaillez le contenu de la séance..."
+              aria-label="Contenu du cours"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="journalHomework" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Travail à faire</label>
+            <textarea
+              id="journalHomework"
+              rows={2}
+              className="mt-1 block w-full border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-800 dark:text-gray-200"
+              defaultValue={selectedJournalEntry?.homework || ''}
+              placeholder="Travail à faire pour la prochaine séance..."
+              aria-label="Travail à faire"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="journalResources" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ressources</label>
+            <textarea
+              id="journalResources"
+              rows={2}
+              className="mt-1 block w-full border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-800 dark:text-gray-200"
+              defaultValue={selectedJournalEntry?.resources ? selectedJournalEntry.resources.join('\n') : ''}
+              placeholder="Une ressource par ligne (manuels, liens, documents...)"
+              aria-label="Ressources utilisées"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="journalStatus" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Statut</label>
+            <select
+              id="journalStatus"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-800 dark:text-gray-200"
+              defaultValue={selectedJournalEntry?.status || 'planned'}
+              aria-label="Statut de la séance"
+            >
+              <option value="planned">Planifié</option>
+              <option value="in-progress">En cours</option>
+              <option value="completed">Terminé</option>
+            </select>
+          </div>
+        </div>
+      </FormModal>
+      
+      {/* Modal pour l'ajout/édition d'une entrée du cahier de textes */}
+      <FormModal
+        isOpen={isTextbookEntryModalOpen}
+        onClose={() => setIsTextbookEntryModalOpen(false)}
+        title={selectedTextbookEntry ? 'Modifier une entrée du cahier de textes' : 'Ajouter une entrée au cahier de textes'}
+        onSubmit={(data) => handleSaveTextbookEntry(data)}
+        initialValues={selectedTextbookEntry || {
+          date: new Date().toISOString().split('T')[0],
+          class: '',
+          subject: '',
+          teacher: '',
+          title: '',
+          content: '',
+          homework: '',
+          resources: [],
+          status: 'planned'
+        }}
+      >
+        {({ values, setFieldValue, errors, touched }) => (
+          <form className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="date"
+                  name="date"
+                  required
+                  value={values.date || ''}
+                  onChange={(e) => setFieldValue('date', e.target.value)}
+                  className={`w-full px-3 py-2 border ${touched.date && errors.date ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                />
+                {touched.date && errors.date && (
+                  <p className="mt-1 text-sm text-red-500">{errors.date}</p>
+                )}
+              </div>
+              
+              <div>
+                <label htmlFor="class" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Classe <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="class"
+                  name="class"
+                  required
+                  value={values.class || ''}
+                  onChange={(e) => setFieldValue('class', e.target.value)}
+                  className={`w-full px-3 py-2 border ${touched.class && errors.class ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                >
+                  <option value="">Sélectionner une classe</option>
+                  {Array.from(new Set(classesData.map(c => c.name))).map(className => (
+                    <option key={className} value={className}>{className}</option>
+                  ))}
+                </select>
+                {touched.class && errors.class && (
+                  <p className="mt-1 text-sm text-red-500">{errors.class}</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Matière <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="subject"
+                  name="subject"
+                  required
+                  value={values.subject || ''}
+                  onChange={(e) => setFieldValue('subject', e.target.value)}
+                  className={`w-full px-3 py-2 border ${touched.subject && errors.subject ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                >
+                  <option value="">Sélectionner une matière</option>
+                  {Array.from(new Set(subjectsData.map(s => s.name))).map(subjectName => (
+                    <option key={subjectName} value={subjectName}>{subjectName}</option>
+                  ))}
+                </select>
+                {touched.subject && errors.subject && (
+                  <p className="mt-1 text-sm text-red-500">{errors.subject}</p>
+                )}
+              </div>
+              
+              <div>
+                <label htmlFor="teacher" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Enseignant <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="teacher"
+                  name="teacher"
+                  required
+                  value={values.teacher || ''}
+                  onChange={(e) => setFieldValue('teacher', e.target.value)}
+                  className={`w-full px-3 py-2 border ${touched.teacher && errors.teacher ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                >
+                  <option value="">Sélectionner un enseignant</option>
+                  {Array.from(new Set(teachersData.map(t => t.name))).map(teacherName => (
+                    <option key={teacherName} value={teacherName}>{teacherName}</option>
+                  ))}
+                </select>
+                {touched.teacher && errors.teacher && (
+                  <p className="mt-1 text-sm text-red-500">{errors.teacher}</p>
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Titre <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                required
+                value={values.title || ''}
+                onChange={(e) => setFieldValue('title', e.target.value)}
+                className={`w-full px-3 py-2 border ${touched.title && errors.title ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                placeholder="Titre de la séance"
+              />
+              {touched.title && errors.title && (
+                <p className="mt-1 text-sm text-red-500">{errors.title}</p>
+              )}
+            </div>
+            
+            <div>
+              <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Contenu du cours
+              </label>
+              <textarea
+                id="content"
+                name="content"
+                rows={3}
+                value={values.content || ''}
+                onChange={(e) => setFieldValue('content', e.target.value)}
+                className={`w-full px-3 py-2 border ${touched.content && errors.content ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                placeholder="Contenu du cours (optionnel pour le cahier de textes)"
+              />
+              {touched.content && errors.content && (
+                <p className="mt-1 text-sm text-red-500">{errors.content}</p>
+              )}
+            </div>
+            
+            <div>
+              <label htmlFor="homework" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Travail à faire <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="homework"
+                name="homework"
+                rows={5}
+                required
+                value={values.homework || ''}
+                onChange={(e) => setFieldValue('homework', e.target.value)}
+                className={`w-full px-3 py-2 border ${touched.homework && errors.homework ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                placeholder="Détaillez le travail à faire pour la prochaine séance"
+              />
+              {touched.homework && errors.homework && (
+                <p className="mt-1 text-sm text-red-500">{errors.homework}</p>
+              )}
+            </div>
+            
+            <div>
+              <label htmlFor="resources" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Ressources
+              </label>
+              <textarea
+                id="resources"
+                name="resources"
+                rows={2}
+                value={Array.isArray(values.resources) ? values.resources.join(', ') : values.resources || ''}
+                onChange={(e) => setFieldValue('resources', e.target.value)}
+                className={`w-full px-3 py-2 border ${touched.resources && errors.resources ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                placeholder="Liste des ressources séparées par des virgules"
+              />
+              {touched.resources && errors.resources && (
+                <p className="mt-1 text-sm text-red-500">{errors.resources}</p>
+              )}
+            </div>
+            
+            <div>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Statut
+              </label>
+              <select
+                id="status"
+                name="status"
+                value={values.status || 'planned'}
+                onChange={(e) => setFieldValue('status', e.target.value)}
+                className={`w-full px-3 py-2 border ${touched.status && errors.status ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+              >
+                <option value="planned">Planifié</option>
+                <option value="in-progress">En cours</option>
+                <option value="completed">Terminé</option>
+              </select>
+              {touched.status && errors.status && (
+                <p className="mt-1 text-sm text-red-500">{errors.status}</p>
+              )}
+            </div>
+          </form>
+        )}
+      </FormModal>
+      
       <FormModal
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
@@ -2208,6 +3104,202 @@ const Planning: React.FC = () => {
         onClose={() => setIsScheduleEntryModalOpen(false)}
         onSave={handleSaveScheduleEntry}
       />
+
+      {/* Modal pour l'ajout/édition d'une entrée du cahier journal */}
+      <FormModal
+        isOpen={isJournalEntryModalOpen}
+        onClose={() => setIsJournalEntryModalOpen(false)}
+        title={selectedJournalEntry ? 'Modifier une entrée du cahier journal' : 'Ajouter une entrée au cahier journal'}
+        onSubmit={(data) => handleSaveJournalEntry(data)}
+        initialValues={selectedJournalEntry || {
+          date: new Date().toISOString().split('T')[0],
+          class: '',
+          subject: '',
+          teacher: '',
+          title: '',
+          content: '',
+          homework: '',
+          resources: [],
+          status: 'planned'
+        }}
+      >
+        {({ values, setFieldValue, errors, touched }) => (
+          <form className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="date"
+                  name="date"
+                  required
+                  value={values.date || ''}
+                  onChange={(e) => setFieldValue('date', e.target.value)}
+                  className={`w-full px-3 py-2 border ${touched.date && errors.date ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                />
+                {touched.date && errors.date && (
+                  <p className="mt-1 text-sm text-red-500">{errors.date}</p>
+                )}
+              </div>
+              
+              <div>
+                <label htmlFor="class" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Classe <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="class"
+                  name="class"
+                  required
+                  value={values.class || ''}
+                  onChange={(e) => setFieldValue('class', e.target.value)}
+                  className={`w-full px-3 py-2 border ${touched.class && errors.class ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                >
+                  <option value="">Sélectionner une classe</option>
+                  {Array.from(new Set(classesData.map(c => c.name))).map(className => (
+                    <option key={className} value={className}>{className}</option>
+                  ))}
+                </select>
+                {touched.class && errors.class && (
+                  <p className="mt-1 text-sm text-red-500">{errors.class}</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Matière <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="subject"
+                  name="subject"
+                  required
+                  value={values.subject || ''}
+                  onChange={(e) => setFieldValue('subject', e.target.value)}
+                  className={`w-full px-3 py-2 border ${touched.subject && errors.subject ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                >
+                  <option value="">Sélectionner une matière</option>
+                  {Array.from(new Set(subjectsData.map(s => s.name))).map(subjectName => (
+                    <option key={subjectName} value={subjectName}>{subjectName}</option>
+                  ))}
+                </select>
+                {touched.subject && errors.subject && (
+                  <p className="mt-1 text-sm text-red-500">{errors.subject}</p>
+                )}
+              </div>
+              
+              <div>
+                <label htmlFor="teacher" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Enseignant <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="teacher"
+                  name="teacher"
+                  required
+                  value={values.teacher || ''}
+                  onChange={(e) => setFieldValue('teacher', e.target.value)}
+                  className={`w-full px-3 py-2 border ${touched.teacher && errors.teacher ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+                >
+                  <option value="">Sélectionner un enseignant</option>
+                  {Array.from(new Set(teachersData.map(t => t.name))).map(teacherName => (
+                    <option key={teacherName} value={teacherName}>{teacherName}</option>
+                  ))}
+                </select>
+                {touched.teacher && errors.teacher && (
+                  <p className="mt-1 text-sm text-red-500">{errors.teacher}</p>
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Titre <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                required
+                value={values.title || ''}
+                onChange={(e) => setFieldValue('title', e.target.value)}
+                placeholder="Titre de la séance"
+                className={`w-full px-3 py-2 border ${touched.title && errors.title ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+              />
+              {touched.title && errors.title && (
+                <p className="mt-1 text-sm text-red-500">{errors.title}</p>
+              )}
+            </div>
+            
+            <div>
+              <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Contenu du cours <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="content"
+                name="content"
+                required
+                value={values.content || ''}
+                onChange={(e) => setFieldValue('content', e.target.value)}
+                rows={4}
+                placeholder="Description détaillée du contenu du cours..."
+                className={`w-full px-3 py-2 border ${touched.content && errors.content ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
+              ></textarea>
+              {touched.content && errors.content && (
+                <p className="mt-1 text-sm text-red-500">{errors.content}</p>
+              )}
+            </div>
+            
+            <div>
+              <label htmlFor="homework" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Travail à faire
+              </label>
+              <textarea
+                id="homework"
+                name="homework"
+                value={values.homework || ''}
+                onChange={(e) => setFieldValue('homework', e.target.value)}
+                rows={3}
+                placeholder="Devoirs à faire pour la prochaine séance..."
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              ></textarea>
+            </div>
+            
+            <div>
+              <label htmlFor="resources" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Ressources (séparées par des virgules)
+              </label>
+              <input
+                type="text"
+                id="resources"
+                name="resources"
+                value={Array.isArray(values.resources) ? values.resources.join(', ') : values.resources || ''}
+                onChange={(e) => setFieldValue('resources', e.target.value)}
+                placeholder="Manuel p.45-47, Fiche d'exercices, Vidéo explicative..."
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Statut
+              </label>
+              <select
+                id="status"
+                name="status"
+                value={values.status || 'planned'}
+                onChange={(e) => setFieldValue('status', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="planned">Planifié</option>
+                <option value="in-progress">En cours</option>
+                <option value="completed">Terminé</option>
+              </select>
+            </div>
+          </form>
+        )}
+      </FormModal>
 
       <TeacherAvailabilityModal
         isOpen={isTeacherAvailabilityModalOpen}
