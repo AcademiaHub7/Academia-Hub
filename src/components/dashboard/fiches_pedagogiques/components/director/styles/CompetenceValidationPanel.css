@@ -1,0 +1,160 @@
+.competence-validation-panel {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.competence-validation-panel h2 {
+  margin-top: 0;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.validation-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.competence-section,
+.activity-section,
+.pedagogical-section,
+.suggestions-section {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+}
+
+.competence-analysis,
+.activity-analysis {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.analysis-result {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.status.success {
+  color: #22c55e;
+  background: #dcfce7;
+}
+
+.status.error {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+.score {
+  color: #64748b;
+  margin-left: auto;
+}
+
+.recommendations {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f0f9ff;
+  border-left: 3px solid #3b82f6;
+}
+
+.recommendation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+.recommendation .icon {
+  color: #3b82f6;
+  width: 16px;
+  height: 16px;
+}
+
+.activity-details {
+  margin-top: 10px;
+}
+
+.validation-status {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.analysis-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.metric .label {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 5px;
+}
+
+.metric .value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.suggestions {
+  background: white;
+  padding: 15px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.section {
+  margin-bottom: 20px;
+}
+
+.section h4 {
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+.section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.section li {
+  padding: 8px 12px;
+  margin-bottom: 5px;
+  background: #f8fafc;
+  border-radius: 4px;
+  color: #475569;
+}

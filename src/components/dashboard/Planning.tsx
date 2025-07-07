@@ -11,6 +11,7 @@ import {
   Clock,
   Settings,
   AlertTriangle,
+  Book,
   BookOpen,
   User,
   Monitor,
@@ -47,6 +48,8 @@ import {
 import FormModal from '../modals/FormModal';
 import { Subject } from '../modals/SubjectModal';
 import JournalTab from './JournalTab';
+import CahierTexteBoard from './textes/CahierTexteBoard';
+import FichesPedagogiquesTab from './fiches_pedagogiques/FichesPedagogiquesTab';
 
 
 const Planning: React.FC = () => {
@@ -1415,11 +1418,12 @@ const Planning: React.FC = () => {
           <nav className="-mb-px flex space-x-8 px-6 overflow-x-auto">
             {[
               { id: 'resources', label: 'Ressources', icon: MapPin },
-              { id: 'subjects', label: 'Matières', icon: BookOpen },
+              { id: 'subjects', label: 'Matières', icon: Book },
               { id: 'classes', label: 'Classes & Séries', icon: Building },
               { id: 'teachers', label: 'Enseignants', icon: Users },
               { id: 'schedule', label: 'Emploi du temps', icon: Calendar },
-              { id: 'journal', label: 'Cahier journal', icon: FileText },
+              { id: 'journal', label: 'Cahier journal', icon: BookOpen },
+              { id: 'fiches', label: 'Fiches pédagogiques', icon: FileText },
               { id: 'textes', label: 'Cahier de textes', icon: Clipboard },
               { id: 'availability', label: 'Disponibilités', icon: Clock },
               { id: 'hours', label: 'Heures de cours', icon: BarChart3 }
@@ -2113,24 +2117,21 @@ const Planning: React.FC = () => {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Cahier de Textes</h3>
-                <button 
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800"
-                  onClick={handleAddTextbookEntry}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nouvelle entrée
-                </button>
               </div>
               
-              {/* Contenu de l'onglet cahier de textes supprimé - à remplacer par la nouvelle implémentation */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
-                <FileText className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-3" />
-                <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">Contenu supprimé</h4>
-                <p className="text-gray-600 dark:text-gray-400">Le contenu de l'onglet Cahier de Textes a été supprimé en attendant la nouvelle implémentation.</p>
-              </div>
+              <CahierTexteBoard onlineStatus={true} onAddEntry={handleAddTextbookEntry} />
             </div>
           )}
           
+          {activeTab === 'fiches' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Fiches pédagogiques</h3>
+              </div>
+              <FichesPedagogiquesTab />
+            </div>
+          )}
+
           {activeTab === 'hours' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">

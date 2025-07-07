@@ -1,8 +1,9 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Edit, X, Check, Clock, Calendar, BookOpen, Users } from 'lucide-react';
+import { Edit, X, Check, Clock, Calendar, BookOpen, Users, FileDown } from 'lucide-react';
 import { JournalEntry } from '../../../types/journal';
+import { generateEntryPDF } from '../../../utils/pdfExport';
 
 interface CahierJournalViewProps {
   entry: JournalEntry;
@@ -19,7 +20,8 @@ const CahierJournalView: React.FC<CahierJournalViewProps> = ({
     if (!dateString) return 'Non planifié';
     try {
       return format(new Date(dateString), 'EEEE d MMMM yyyy', { locale: fr });
-    } catch (e) {
+    } catch {
+      // En cas d'erreur de parsing de la date, on retourne la chaîne brute
       return dateString;
     }
   };
@@ -45,8 +47,17 @@ const CahierJournalView: React.FC<CahierJournalViewProps> = ({
         <h2 className="text-xl font-semibold">{entry.title}</h2>
         <div className="flex space-x-2">
           <button 
+            className="btn btn-outline btn-sm"
+            onClick={() => generateEntryPDF(entry)}
+            title="Exporter en PDF"
+          >
+            <FileDown className="w-4 h-4 mr-2" />
+            PDF
+          </button>
+          <button 
             className="btn btn-primary btn-sm"
             onClick={() => onEdit(entry)}
+            title="Modifier cette séance"
           >
             <Edit className="w-4 h-4 mr-2" />
             Modifier
@@ -54,6 +65,7 @@ const CahierJournalView: React.FC<CahierJournalViewProps> = ({
           <button 
             className="btn btn-ghost btn-sm"
             onClick={onClose}
+            title="Fermer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -103,9 +115,10 @@ const CahierJournalView: React.FC<CahierJournalViewProps> = ({
       {entry.description && (
         <div className="mb-6">
           <h3 className="text-lg font-medium mb-2">Description</h3>
-          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            {entry.description}
-          </div>
+          <div 
+            className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg prose max-w-none" 
+            dangerouslySetInnerHTML={{ __html: entry.description }}
+          />
         </div>
       )}
 
@@ -151,18 +164,20 @@ const CahierJournalView: React.FC<CahierJournalViewProps> = ({
       {entry.materials && (
         <div className="mt-6">
           <h3 className="text-lg font-medium mb-2">Matériel nécessaire</h3>
-          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            {entry.materials}
-          </div>
+          <div 
+            className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg prose max-w-none" 
+            dangerouslySetInnerHTML={{ __html: entry.materials }}
+          />
         </div>
       )}
 
       {entry.notes && (
         <div className="mt-6">
           <h3 className="text-lg font-medium mb-2">Notes</h3>
-          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            {entry.notes}
-          </div>
+          <div 
+            className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg prose max-w-none" 
+            dangerouslySetInnerHTML={{ __html: entry.notes }}
+          />
         </div>
       )}
 

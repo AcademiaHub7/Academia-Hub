@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Search, Filter, Eye, Edit, Check, Clock } from 'lucide-react';
+import { Search, Filter, Eye, Edit, Check, Clock, Calendar, FileText } from 'lucide-react';
 import { JournalEntry, JournalFilter } from '../../../types/journal';
+import { generateEntryPDF, generateEntriesListPDF } from '../../../utils/pdfExport';
 
 interface CahierJournalListProps {
   entries: JournalEntry[];
@@ -102,7 +103,8 @@ const CahierJournalList: React.FC<CahierJournalListProps> = ({
     if (!dateString) return 'Non planifié';
     try {
       return format(new Date(dateString), 'EEEE d MMMM', { locale: fr });
-    } catch (e) {
+    } catch {
+      // En cas d'erreur de parsing de la date, on retourne la chaîne brute
       return dateString;
     }
   };
@@ -125,25 +127,40 @@ const CahierJournalList: React.FC<CahierJournalListProps> = ({
   return (
     <div className="border rounded-lg p-4 h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold">Liste des séances</h3>
+        <h2 className="text-xl font-bold">Liste des séances</h2>
         <div className="flex space-x-2">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               name="search"
-              value={filter.search}
+              value={filter.search || ''}
               onChange={handleFilterChange}
               placeholder="Rechercher..."
-              className="input input-bordered input-sm pl-9 pr-4 w-48"
+              className="input input-bordered input-sm pr-8"
             />
+            <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           </div>
-          <button 
-            className="btn btn-ghost btn-sm"
+          <button
+            className={`btn btn-sm ${showFilters ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => setShowFilters(!showFilters)}
+            title="Afficher/masquer les filtres"
           >
-            <Filter className="w-4 h-4 mr-1" />
-            Filtres
+            <Filter className="w-4 h-4" />
+            <span className="ml-1">Filtres</span>
+          </button>
+          <button
+            className="btn btn-sm btn-ghost"
+            onClick={() => generateEntriesListPDF(filteredEntries, filter.period === 'all' ? 'Toutes les périodes' : 
+              filter.period === 'today' ? 'Aujourd\'hui' :
+              filter.period === 'week' ? 'Cette semaine' :
+              filter.period === 'month' ? 'Ce mois' :
+              filter.period === 'future' ? 'À venir' :
+              filter.period === 'past' ? 'Passées' :
+              filter.period === 'unplanned' ? 'Non planifiées' : 'Personnalisée')}
+            title="Exporter la liste en PDF"
+          >
+            <FileText className="w-4 h-4" />
+            <span className="ml-1">Exporter PDF</span>
           </button>
         </div>
       </div>
@@ -158,6 +175,7 @@ const CahierJournalList: React.FC<CahierJournalListProps> = ({
                 value={filter.class}
                 onChange={handleFilterChange}
                 className="select select-bordered select-sm w-full"
+                title="Filtrer par classe"
               >
                 <option value="">Toutes les classes</option>
                 {classes.map(cls => (
@@ -172,6 +190,7 @@ const CahierJournalList: React.FC<CahierJournalListProps> = ({
                 value={filter.subject}
                 onChange={handleFilterChange}
                 className="select select-bordered select-sm w-full"
+                title="Filtrer par matière"
               >
                 <option value="">Toutes les matières</option>
                 {subjects.map(subject => (
@@ -186,6 +205,7 @@ const CahierJournalList: React.FC<CahierJournalListProps> = ({
                 value={filter.period}
                 onChange={handleFilterChange}
                 className="select select-bordered select-sm w-full"
+                title="Filtrer par période"
               >
                 <option value="all">Toutes les périodes</option>
                 <option value="today">Aujourd'hui</option>
@@ -203,6 +223,7 @@ const CahierJournalList: React.FC<CahierJournalListProps> = ({
                 value={filter.status}
                 onChange={handleFilterChange}
                 className="select select-bordered select-sm w-full"
+                title="Filtrer par statut"
               >
                 <option value="all">Tous les statuts</option>
                 <option value="planned">Planifiées</option>
@@ -234,6 +255,7 @@ const CahierJournalList: React.FC<CahierJournalListProps> = ({
                     <button 
                       className="btn btn-ghost btn-xs"
                       onClick={() => onViewEntry(entry)}
+                      title="Voir les détails de la séance"
                     >
                       <Eye className="w-3 h-3 mr-1" />
                       Voir
@@ -241,9 +263,18 @@ const CahierJournalList: React.FC<CahierJournalListProps> = ({
                     <button 
                       className="btn btn-ghost btn-xs"
                       onClick={() => onEditEntry(entry)}
+                      title="Modifier la séance"
                     >
                       <Edit className="w-3 h-3 mr-1" />
                       Modifier
+                    </button>
+                    <button 
+                      className="btn btn-ghost btn-xs"
+                      onClick={() => generateEntryPDF(entry)}
+                      title="Exporter la séance en PDF"
+                    >
+                      <FileText className="w-3 h-3 mr-1" />
+                      PDF
                     </button>
                   </div>
                 </div>
