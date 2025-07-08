@@ -1,14 +1,25 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, MoreHorizontal, Star, Edit, Eye, Trash2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useFicheContext } from '../context/FicheContext';
-import { Fiche, SUBJECTS } from '../types';
+import { Fiche, SUBJECTS, FicheViewMode } from '../types';
 
 interface FicheListProps {
   onEdit: (id: string) => void;
   onView: (id: string) => void;
+  selectedFicheId?: string;
+  setSelectedFicheId?: React.Dispatch<React.SetStateAction<string | undefined>>;
+  viewMode?: FicheViewMode;
+  setViewMode?: React.Dispatch<React.SetStateAction<FicheViewMode>>;
 }
 
-const FicheList: React.FC<FicheListProps> = ({ onEdit, onView }) => {
+const FicheList: React.FC<FicheListProps> = ({ 
+  onEdit, 
+  onView, 
+  selectedFicheId, 
+  setSelectedFicheId, 
+  viewMode = 'list', 
+  setViewMode 
+}) => {
   const { fiches, isLoading, toggleFavorite, deleteFiche, updateFicheStatus } = useFicheContext();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -106,9 +117,41 @@ const FicheList: React.FC<FicheListProps> = ({ onEdit, onView }) => {
     }
   };
 
+  // Fonction pour changer le mode d'affichage
+  const changeViewMode = (mode: FicheViewMode) => {
+    if (setViewMode) {
+      setViewMode(mode);
+    }
+  };
+
+  // Fonction pour sélectionner une fiche
+  const selectFiche = (id: string) => {
+    if (setSelectedFicheId) {
+      setSelectedFicheId(id);
+    }
+  };
+
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-semibold mb-6">Liste des fiches pédagogiques</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold">Liste des fiches pédagogiques</h2>
+        <div className="flex space-x-2">
+          <button 
+            onClick={() => changeViewMode('list')} 
+            className={`px-3 py-1 rounded ${viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            aria-pressed={viewMode === 'list'}
+          >
+            Liste
+          </button>
+          <button 
+            onClick={() => changeViewMode('grid')} 
+            className={`px-3 py-1 rounded ${viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            aria-pressed={viewMode === 'grid'}
+          >
+            Grille
+          </button>
+        </div>
+      </div>
       
       {isLoading ? (
         <div className="text-center py-10">
@@ -157,8 +200,12 @@ const FicheList: React.FC<FicheListProps> = ({ onEdit, onView }) => {
                     return (
                       <tr 
                         key={fiche.id} 
-                        className="hover:bg-gray-50 cursor-pointer"
-                        onClick={() => onView(fiche.id)}
+                        className={`hover:bg-gray-50 cursor-pointer ${selectedFicheId === fiche.id ? 'bg-blue-50' : ''}`} 
+                        onClick={() => {
+                          selectFiche(fiche.id);
+                          handleView(new MouseEvent('click') as React.MouseEvent<HTMLElement>, fiche.id);
+                        }}
+                        aria-selected={selectedFicheId === fiche.id}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
@@ -198,7 +245,7 @@ const FicheList: React.FC<FicheListProps> = ({ onEdit, onView }) => {
                               aria-label="Options pour la fiche"
                               role="button"
                               aria-expanded={activeDropdown === fiche.id}
-                              aria-controls="fiche-options-menu"
+                              aria-controls={`fiche-options-menu-${fiche.id}`}
                             >
                               <MoreHorizontal className="h-5 w-5" />
                             </button>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 // Import shared dashboard styles
 import '../../styles/dashboardStyles.css';
+import '../../styles/fichesStyles.css';
 import { 
   Building, 
   Plus, 
@@ -29,6 +30,7 @@ import {
   Clipboard,
   Printer
  } from 'lucide-react';
+import { FicheProvider } from './fiches_pedagogiques/context/FicheContext';
 import { 
   AlertModal,
   ClassModal,
@@ -49,11 +51,12 @@ import FormModal from '../modals/FormModal';
 import { Subject } from '../modals/SubjectModal';
 import JournalTab from './JournalTab';
 import CahierTexteBoard from './textes/CahierTexteBoard';
-import FichesPedagogiquesTab from './fiches_pedagogiques/FichesPedagogiquesTab';
 
 
 const Planning: React.FC = () => {
   const [activeTab, setActiveTab] = useState('classes');
+  // Ajouter un état pour suivre si l'onglet fiches a été cliqué
+  const [ficheTabClicked, setFicheTabClicked] = useState(false);
   const [selectedClass, setSelectedClass] = useState<string>('6ème A'); // Classe par défaut
   
   // État pour les heures de pause
@@ -96,6 +99,17 @@ const Planning: React.FC = () => {
   const [isResourcePlanningModalOpen, setIsResourcePlanningModalOpen] = useState(false);
   const [isClassStudentAssignmentModalOpen, setIsClassStudentAssignmentModalOpen] = useState(false);
   const [isTeacherScheduleModalOpen, setIsTeacherScheduleModalOpen] = useState(false);
+  
+  // État pour les notifications
+  const [notifications, setNotifications] = useState<any[]>([]);
+  
+  // Contexte de sécurité
+  const securityContext = {
+    canEdit: true,
+    canView: true,
+    canDelete: true,
+    userRole: 'teacher' // ou 'admin' selon le rôle de l'utilisateur
+  };
   
   const [selectedItem, setSelectedItem] = useState<Subject | any>(null);
   const [selectedResourceForPlanning, setSelectedResourceForPlanning] = useState<any>(null);
@@ -942,14 +956,19 @@ const Planning: React.FC = () => {
     // Mise à jour des données
     if (selectedTextbookEntry) {
       // Mise à jour d'une entrée existante
-      const updatedEntries = textbookEntriesData.map(entry => 
-        entry.id === selectedTextbookEntry.id ? updatedEntry : entry
+      const updatedEntries = textbookEntriesData.map(item => 
+        item.id === selectedTextbookEntry.id ? { ...item, ...entryData } : item
       );
       setTextbookEntriesData(updatedEntries);
     } else {
       // Ajout d'une nouvelle entrée
-      const newEntries = [updatedEntry, ...textbookEntriesData];
-      setTextbookEntriesData(newEntries);
+      const newEntry = {
+        id: Date.now().toString(),
+        ...entryData,
+        date: new Date().toISOString(),
+        teacher: 'Enseignant actuel' // À remplacer par l'utilisateur connecté
+      };
+      setTextbookEntriesData([...textbookEntriesData, newEntry]);
     }
     
     // Fermeture du modal et affichage du message de confirmation
@@ -1363,6 +1382,22 @@ const Planning: React.FC = () => {
     setIsSubjectModalOpen(true);
   };
 
+  // Gestion des fiches pédagogiques
+  const handleEditFiche = (id: string) => {
+    console.log(`Édition de la fiche ${id}`);
+    // Logique pour éditer une fiche pédagogique
+  };
+
+  const handleViewFiche = (id: string) => {
+    console.log(`Visualisation de la fiche ${id}`);
+    // Logique pour visualiser une fiche pédagogique
+  };
+
+  const handleUpdateFiche = (id: string, updates: any) => {
+    console.log(`Mise à jour de la fiche ${id}`, updates);
+    // Logique pour mettre à jour une fiche pédagogique
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1432,7 +1467,14 @@ const Planning: React.FC = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    // Si l'onglet fiches est cliqué, mettre à jour l'état ficheTabClicked
+                    if (tab.id === 'fiches') {
+                      setFicheTabClicked(true);
+                      console.log('Fiches tab clicked, setting activeTab to:', tab.id);
+                    }
+                  }}
                   className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center ${
                     activeTab === tab.id
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -2123,12 +2165,20 @@ const Planning: React.FC = () => {
             </div>
           )}
           
-          {activeTab === 'fiches' && (
-            <div className="space-y-6">
+          {(activeTab === 'fiches' || ficheTabClicked) && (
+            <div className="space-y-6 fiches-container">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Fiches pédagogiques</h3>
               </div>
-              <FichesPedagogiquesTab />
+              <FicheProvider>
+                <FichesPedagogiquesTab
+                  onEdit={handleEditFiche}
+                  onView={handleViewFiche}
+                  updateFiche={handleUpdateFiche}
+                  securityContext={securityContext}
+                  setNotifications={setNotifications}
+                />
+              </FicheProvider>
             </div>
           )}
 

@@ -1,154 +1,413 @@
-import React from 'react';
-import { FileText, Eye, Edit, Copy, Calendar } from 'lucide-react';
-
-interface FichePedagogique {
-  id: string;
-  titre: string;
-  matiere: string;
-  classe: string;
-  dateCreation: string;
-  dateModification: string;
-  auteur: string;
-  statut: 'brouillon' | 'soumise' | 'validée' | 'rejetée' | 'à_corriger';
-  type: 'fiche' | 'planification';
-}
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, MoreHorizontal, Star, Edit, Eye, Trash2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { useFicheContext } from '../context/FicheContext';
+import { Fiche, SUBJECTS, FicheViewMode } from '../types';
 
 interface FicheListProps {
-  fiches: FichePedagogique[];
-  filters: {
-    matiere: string;
-    classe: string;
-    statut: string;
-    type: string;
-    date: string;
-  };
-  onEdit: (fiche: FichePedagogique) => void;
-  onView: (fiche: FichePedagogique) => void;
-  onDuplicate: (fiche: FichePedagogique) => void;
-  onFilterChange: (filters: any) => void;
+  onEdit: (id: string) => void;
+  onView: (id: string) => void;
+  selectedFicheId?: string;
+  setSelectedFicheId?: React.Dispatch<React.SetStateAction<string | undefined>>;
+  viewMode?: FicheViewMode;
+  setViewMode?: React.Dispatch<React.SetStateAction<FicheViewMode>>;
 }
 
-const FicheList: React.FC<FicheListProps> = ({
-  fiches,
-  filters,
-  onEdit,
-  onView,
-  onDuplicate,
-  onFilterChange
+const FicheList: React.FC<FicheListProps> = ({ 
+  onEdit, 
+  onView, 
+  selectedFicheId, 
+  setSelectedFicheId, 
+  viewMode = 'list', 
+  setViewMode 
 }) => {
-  const getStatusColor = (statut: string) => {
-    switch (statut) {
-      case 'brouillon': return 'bg-yellow-100 text-yellow-800';
-      case 'soumise': return 'bg-blue-100 text-blue-800';
-      case 'validée': return 'bg-green-100 text-green-800';
-      case 'rejetée': return 'bg-red-100 text-red-800';
-      case 'à_corriger': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const { fiches, isLoading, toggleFavorite, deleteFiche, updateFicheStatus } = useFicheContext();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  // Pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = fiches.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(fiches.length / itemsPerPage);
+
+  // Fonction pour obtenir le nom complet d'une matière
+  const getSubjectName = (code: string): string => {
+    const subject = SUBJECTS.find(s => s.value === code);
+    return subject ? subject.label : code;
+  };
+
+  // Fonction pour formater la date
+  const formatDate = (date: Date): string => {
+    return new Date(date).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  // Gestion du menu d'actions
+  const toggleDropdown = (id: string) => {
+    setActiveDropdown(activeDropdown === id ? null : id);
+  };
+
+  // Fermer le dropdown si on clique ailleurs
+  React.useEffect(() => {
+    const handleClickOutside = () => setActiveDropdown(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  // Gestion des actions
+  const handleEdit = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    onEdit(id);
+    setActiveDropdown(null);
+  };
+
+  const handleView = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    onView(id);
+    setActiveDropdown(null);
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette fiche ?')) {
+      await deleteFiche(id);
+    }
+    setActiveDropdown(null);
+  };
+
+  const handleToggleFavorite = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    await toggleFavorite(id);
+    setActiveDropdown(null);
+  };
+
+  const handleStatusChange = async (e: React.MouseEvent, id: string, status: Fiche['status']) => {
+    e.stopPropagation();
+    await updateFicheStatus(id, status, 'current-user-id'); // Remplacer par l'ID de l'utilisateur actuel
+    setActiveDropdown(null);
+  };
+
+  // Obtenir la couleur et l'icône pour le statut
+  const getStatusInfo = (status: Fiche['status']) => {
+    switch (status) {
+      case 'validated':
+        return { color: 'text-green-500', bg: 'bg-green-100', icon: <CheckCircle className="h-4 w-4" /> };
+      case 'pending':
+        return { color: 'text-yellow-500', bg: 'bg-yellow-100', icon: <AlertCircle className="h-4 w-4" /> };
+      case 'rejected':
+        return { color: 'text-red-500', bg: 'bg-red-100', icon: <XCircle className="h-4 w-4" /> };
+      case 'draft':
+      default:
+        return { color: 'text-gray-500', bg: 'bg-gray-100', icon: <AlertCircle className="h-4 w-4" /> };
     }
   };
 
-  const filteredFiches = fiches.filter(fiche => {
-    return (
-      (!filters.matiere || fiche.matiere === filters.matiere) &&
-      (!filters.classe || fiche.classe === filters.classe) &&
-      (!filters.statut || fiche.statut === filters.statut) &&
-      (!filters.type || fiche.type === filters.type)
-    );
-  });
+  // Traduction des statuts
+  const translateStatus = (status: Fiche['status']) => {
+    switch (status) {
+      case 'validated': return 'Validée';
+      case 'pending': return 'En attente';
+      case 'rejected': return 'Rejetée';
+      case 'draft': return 'Brouillon';
+      default: return status;
+    }
+  };
+
+  // Fonction pour changer le mode d'affichage
+  const changeViewMode = (mode: FicheViewMode) => {
+    if (setViewMode) {
+      setViewMode(mode);
+    }
+  };
+
+  // Fonction pour sélectionner une fiche
+  const selectFiche = (id: string) => {
+    if (setSelectedFicheId) {
+      setSelectedFicheId(id);
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      {/* Barre de filtres */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <select
-            value={filters.matiere}
-            onChange={(e) => onFilterChange({ ...filters, matiere: e.target.value })}
-            className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300"
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold">Liste des fiches pédagogiques</h2>
+        <div className="flex space-x-2">
+          <button 
+            onClick={() => changeViewMode('list')} 
+            className={`px-3 py-1 rounded ${viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            aria-pressed={viewMode === 'list' ? 'true' : 'false'}
           >
-            <option value="">Toutes les matières</option>
-            <option value="Mathématiques">Mathématiques</option>
-            <option value="Français">Français</option>
-            <option value="Histoire">Histoire</option>
-          </select>
-          <select
-            value={filters.classe}
-            onChange={(e) => onFilterChange({ ...filters, classe: e.target.value })}
-            className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300"
+            Liste
+          </button>
+          <button 
+            onClick={() => changeViewMode('grid')} 
+            className={`px-3 py-1 rounded ${viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            aria-pressed={viewMode === 'grid' ? 'true' : 'false'}
           >
-            <option value="">Toutes les classes</option>
-            <option value="6ème A">6ème A</option>
-            <option value="5ème B">5ème B</option>
-          </select>
-          <select
-            value={filters.statut}
-            onChange={(e) => onFilterChange({ ...filters, statut: e.target.value })}
-            className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300"
-          >
-            <option value="">Tous les statuts</option>
-            <option value="brouillon">Brouillon</option>
-            <option value="soumise">Soumise</option>
-            <option value="validée">Validée</option>
-          </select>
-          <select
-            value={filters.type}
-            onChange={(e) => onFilterChange({ ...filters, type: e.target.value })}
-            className="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300"
-          >
-            <option value="">Tous les types</option>
-            <option value="fiche">Fiche de préparation</option>
-            <option value="planification">Planification</option>
-          </select>
+            Grille
+          </button>
         </div>
       </div>
-
-      {/* Liste des fiches */}
-      <div className="space-y-4">
-        {filteredFiches.map((fiche) => (
-          <div key={fiche.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{fiche.titre}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {fiche.matiere} - {fiche.classe}
-                </p>
-                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${getStatusColor(fiche.statut)}`}>
-                  {fiche.statut}
+      
+      {isLoading ? (
+        <div className="text-center py-10">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Chargement des fiches...</p>
+        </div>
+      ) : fiches.length === 0 ? (
+        <div className="text-center py-10">
+          <p className="text-gray-600">Aucune fiche pédagogique trouvée.</p>
+          <p className="mt-2 text-sm text-gray-500">Créez une nouvelle fiche pour commencer.</p>
+        </div>
+      ) : (
+        <>
+          {viewMode === 'list' ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Titre
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Matière
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Classe
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Statut
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {currentItems.map((fiche) => {
+                    const statusInfo = getStatusInfo(fiche.status);
+                    
+                    return (
+                      <tr 
+                        key={fiche.id} 
+                        className={`hover:bg-gray-50 cursor-pointer ${selectedFicheId === fiche.id ? 'bg-blue-50' : ''}`} 
+                        onClick={() => {
+                          selectFiche(fiche.id);
+                          handleView(new MouseEvent('click') as React.MouseEvent<HTMLElement>, fiche.id);
+                        }}
+                        aria-selected={selectedFicheId === fiche.id ? 'true' : 'false'}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <button 
+                              className="mr-2 text-gray-400 hover:text-yellow-400 focus:outline-none"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleFavorite(e, fiche.id);
+                              }}
+                              aria-label={fiche.isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                            >
+                              <Star 
+                                className={`h-5 w-5 ${fiche.isFavorite ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                              />
+                            </button>
+                            <div className="text-sm font-medium text-gray-900">{fiche.title}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{getSubjectName(fiche.subject)}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{fiche.class}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{formatDate(fiche.date)}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}>
+                            {statusInfo.icon}
+                            <span className="ml-1">{translateStatus(fiche.status)}</span>
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="relative" onClick={(e) => e.stopPropagation()}>
+                            <button 
+                              className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                              onClick={() => toggleDropdown(fiche.id)}
+                              aria-label="Options pour la fiche"
+                              role="button"
+                              aria-expanded={activeDropdown === fiche.id ? 'true' : 'false'}
+                              aria-controls={`fiche-options-menu-${fiche.id}`}
+                            >
+                              <MoreHorizontal className="h-5 w-5" />
+                            </button>
+                            
+                            {activeDropdown === fiche.id && (
+                              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                                <div className="py-1" role="menu" aria-orientation="vertical" id={`fiche-options-menu-${fiche.id}`}>
+                                  <div
+                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left cursor-pointer"
+                                    onClick={(e) => handleView(e, fiche.id)}
+                                    role="menuitem"
+                                    tabIndex={0}
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" /> Visualiser
+                                  </div>
+                                  <div
+                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left cursor-pointer"
+                                    onClick={(e) => handleEdit(e, fiche.id)}
+                                    role="menuitem"
+                                    tabIndex={0}
+                                  >
+                                    <Edit className="h-4 w-4 mr-2" /> Modifier
+                                  </div>
+                                  <div
+                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left cursor-pointer"
+                                    onClick={(e) => handleToggleFavorite(e, fiche.id)}
+                                    role="menuitem"
+                                    tabIndex={0}
+                                  >
+                                    <Star className={`h-4 w-4 mr-2 ${fiche.isFavorite ? 'text-yellow-400 fill-current' : ''}`} />
+                                    {fiche.isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                                  </div>
+                                  
+                                  <hr className="my-1" />
+                                  
+                                  {fiche.status !== 'validated' && (
+                                    <div
+                                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left cursor-pointer"
+                                      onClick={(e) => handleStatusChange(e, fiche.id, 'validated')}
+                                      role="menuitem"
+                                      tabIndex={0}
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-2" /> Marquer comme validée
+                                    </div>
+                                  )}
+                                  
+                                  {fiche.status !== 'pending' && (
+                                    <div
+                                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left cursor-pointer"
+                                      onClick={(e) => handleStatusChange(e, fiche.id, 'pending')}
+                                      role="menuitem"
+                                      tabIndex={0}
+                                    >
+                                      <AlertCircle className="h-4 w-4 mr-2" /> Marquer en attente
+                                    </div>
+                                  )}
+                                  
+                                  <hr className="my-1" />
+                                  <div
+                                    className="flex items-center px-4 py-2 text-sm text-red-700 hover:bg-gray-100 w-full text-left cursor-pointer"
+                                    onClick={(e) => handleDelete(e, fiche.id)}
+                                    role="menuitem"
+                                    tabIndex={0}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" /> Supprimer
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* Implémentation mode grille ici */}
+              {/* À implémenter ultérieurement */}
+            </div>
+          )}
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between bg-white px-4 py-3 border border-gray-200 rounded-lg mt-4">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                    currentPage === 1 ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Précédent
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                    currentPage === totalPages ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Suivant
+                </button>
+              </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Affichage de <span className="font-medium">{indexOfFirstItem + 1}</span> à{' '}
+                    <span className="font-medium">
+                      {Math.min(indexOfLastItem, fiches.length)}
+                    </span>{' '}
+                    sur <span className="font-medium">{fiches.length}</span> résultats
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
+                        currentPage === 1 ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="sr-only">Précédent</span>
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    
+                    {Array.from({ length: totalPages }).map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentPage(index + 1)}
+                        className={`relative inline-flex items-center px-4 py-2 border ${
+                          currentPage === index + 1
+                            ? 'bg-blue-50 border-blue-500 text-blue-600 z-10'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        } text-sm font-medium`}
+                      >
+                        {index + 1}
+                      </button>
+                    ))}
+                    
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
+                        currentPage === totalPages ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="sr-only">Suivant</span>
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </nav>
                 </div>
               </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => onView(fiche)}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                  title="Voir"
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => onEdit(fiche)}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                  title="Éditer"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => onDuplicate(fiche)}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                  title="Dupliquer"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-              </div>
             </div>
-            <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
-              <Calendar className="w-4 h-4 mr-1" />
-              {new Date(fiche.dateModification).toLocaleDateString('fr-FR')}
-            </div>
-          </div>
-        ))}
-      </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
 
-export default FicheList;
+export { FicheList };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Bell } from 'lucide-react';
 import { FicheList } from "./components/FicheList";
-import { Fiche, Notification, SecurityContext } from './types';
+import { Fiche, Notification, SecurityContext, FicheViewMode } from './types';
 
 
 interface Tab {
@@ -26,6 +26,8 @@ const FichesPedagogiquesTab: React.FC<FichesPedagogiquesTabProps> = ({
   setNotifications,
 }) => {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [selectedFicheId, setSelectedFicheId] = useState<string | undefined>(undefined);
+  const [viewMode, setViewMode] = useState<FicheViewMode>('list');
   // Define main tabs
   const mainTabs: Tab[] = [
     {
@@ -35,6 +37,10 @@ const FichesPedagogiquesTab: React.FC<FichesPedagogiquesTabProps> = ({
         <FicheList
           onEdit={onEdit}
           onView={onView}
+          selectedFicheId={selectedFicheId}
+          setSelectedFicheId={setSelectedFicheId}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
         />
       )
     }

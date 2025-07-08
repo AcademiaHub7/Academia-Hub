@@ -1,5 +1,6 @@
 // Types pour les fiches pédagogiques
 export type FicheStatus = 'draft' | 'pending' | 'validated' | 'rejected';
+export type FicheViewMode = 'list' | 'grid' | 'detail';
 
 export interface Fiche {
   id: string;
